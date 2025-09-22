@@ -22,6 +22,34 @@ export interface TradingConstraint {
   updatedAt: Date;
 }
 
+export interface StockGroup {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  color: string;
+  stocks: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ConstraintGroup {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  buyTriggerPercent: number;
+  sellTriggerPercent: number;
+  profitTriggerPercent?: number;
+  buyAmount: number;
+  sellAmount: number;
+  isActive: boolean;
+  stocks: string[];
+  stockGroups: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Position {
   id: string;
   userId: string;
@@ -162,6 +190,25 @@ export interface CreateConstraintRequest {
   profitTriggerPercent?: number;
   buyAmount: number;
   sellAmount: number;
+}
+
+export interface CreateConstraintGroupRequest {
+  name: string;
+  description?: string;
+  buyTriggerPercent: number;
+  sellTriggerPercent: number;
+  profitTriggerPercent?: number;
+  buyAmount: number;
+  sellAmount: number;
+  stocks: string[];
+  stockGroups: string[];
+}
+
+export interface CreateStockGroupRequest {
+  name: string;
+  description?: string;
+  color?: string;
+  stocks: string[];
 }
 
 export interface UpdateConstraintRequest {

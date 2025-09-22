@@ -1,50 +1,77 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, TrendingDown, TrendingUp, Target, DollarSign, Percent, AlertCircle } from 'lucide-react';
 import { constraintsService } from '../../services/constraints';
-import { CreateConstraintRequest } from '../../types';
+import { TradingConstraint, UpdateConstraintRequest } from '../../types';
 import toast from 'react-hot-toast';
 
-const CreateConstraint: React.FC = () => {
+const EditConstraint: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<CreateConstraintRequest>({
-    stockSymbol: '',
-    buyTriggerPercent: -5,
-    sellTriggerPercent: 10,
-    profitTriggerPercent: undefined,
-    buyAmount: 1000,
-    sellAmount: 500
-  });
-
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [constraint, setConstraint] = useState<TradingConstraint | null>(null);
+  const [formData, setFormData] = useState<UpdateConstraintRequest>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (id) {
+      loadConstraint();
+    }
+  }, [id]);
+
+  const loadConstraint = async () => {
+    try {
+      setInitialLoading(true);
+      const constraints = await constraintsService.getConstraints();
+      const foundConstraint = constraints.find(c => c.id === id);
+      
+      if (!foundConstraint) {
+        toast.error('Constraint not found');
+        navigate('/constraints');
+        return;
+      }
+
+      setConstraint(foundConstraint);
+      setFormData({
+        buyTriggerPercent: foundConstraint.buyTriggerPercent,
+        sellTriggerPercent: foundConstraint.sellTriggerPercent,
+        profitTriggerPercent: foundConstraint.profitTriggerPercent,
+        buyAmount: foundConstraint.buyAmount,
+        sellAmount: foundConstraint.sellAmount,
+        isActive: foundConstraint.isActive
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load constraint');
+      navigate('/constraints');
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Stock Symbol validation
-    if (!formData.stockSymbol.trim()) {
-      newErrors.stockSymbol = 'Stock symbol is required';
-    } else if (!/^[A-Z]{1,5}$/.test(formData.stockSymbol.toUpperCase())) {
-      newErrors.stockSymbol = 'Enter a valid stock symbol (1-5 letters)';
-    }
-
     // Buy trigger validation
-    if (formData.buyTriggerPercent >= 0) {
-      newErrors.buyTriggerPercent = 'Buy trigger must be negative (price drop)';
-    } else if (formData.buyTriggerPercent < -50) {
-      newErrors.buyTriggerPercent = 'Buy trigger cannot be less than -50%';
+    if (formData.buyTriggerPercent !== undefined) {
+      if (formData.buyTriggerPercent >= 0) {
+        newErrors.buyTriggerPercent = 'Buy trigger must be negative (price drop)';
+      } else if (formData.buyTriggerPercent < -50) {
+        newErrors.buyTriggerPercent = 'Buy trigger cannot be less than -50%';
+      }
     }
 
     // Sell trigger validation
-    if (formData.sellTriggerPercent <= 0) {
-      newErrors.sellTriggerPercent = 'Sell trigger must be positive (price rise)';
-    } else if (formData.sellTriggerPercent > 100) {
-      newErrors.sellTriggerPercent = 'Sell trigger cannot be more than 100%';
+    if (formData.sellTriggerPercent !== undefined) {
+      if (formData.sellTriggerPercent <= 0) {
+        newErrors.sellTriggerPercent = 'Sell trigger must be positive (price rise)';
+      } else if (formData.sellTriggerPercent > 100) {
+        newErrors.sellTriggerPercent = 'Sell trigger cannot be more than 100%';
+      }
     }
 
     // Profit trigger validation
-    if (formData.profitTriggerPercent !== undefined) {
+    if (formData.profitTriggerPercent !== undefined && formData.profitTriggerPercent !== null) {
       if (formData.profitTriggerPercent <= 0) {
         newErrors.profitTriggerPercent = 'Profit trigger must be positive';
       } else if (formData.profitTriggerPercent > 500) {
@@ -53,16 +80,20 @@ const CreateConstraint: React.FC = () => {
     }
 
     // Amount validations
-    if (formData.buyAmount <= 0) {
-      newErrors.buyAmount = 'Buy amount must be positive';
-    } else if (formData.buyAmount > 100000) {
-      newErrors.buyAmount = 'Buy amount cannot exceed $100,000';
+    if (formData.buyAmount !== undefined) {
+      if (formData.buyAmount <= 0) {
+        newErrors.buyAmount = 'Buy amount must be positive';
+      } else if (formData.buyAmount > 100000) {
+        newErrors.buyAmount = 'Buy amount cannot exceed $100,000';
+      }
     }
 
-    if (formData.sellAmount <= 0) {
-      newErrors.sellAmount = 'Sell amount must be positive';
-    } else if (formData.sellAmount > 100000) {
-      newErrors.sellAmount = 'Sell amount cannot exceed $100,000';
+    if (formData.sellAmount !== undefined) {
+      if (formData.sellAmount <= 0) {
+        newErrors.sellAmount = 'Sell amount must be positive';
+      } else if (formData.sellAmount > 100000) {
+        newErrors.sellAmount = 'Sell amount cannot exceed $100,000';
+      }
     }
 
     setErrors(newErrors);
@@ -72,29 +103,23 @@ const CreateConstraint: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!id || !validateForm()) {
       return;
     }
 
     try {
       setLoading(true);
-      const constraintData = {
-        ...formData,
-        stockSymbol: formData.stockSymbol.toUpperCase(),
-        profitTriggerPercent: formData.profitTriggerPercent || undefined
-      };
-      
-      await constraintsService.createConstraint(constraintData);
-      toast.success('Constraint created successfully!');
+      await constraintsService.updateConstraint(id, formData);
+      toast.success('Constraint updated successfully!');
       navigate('/constraints');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create constraint');
+      toast.error(error instanceof Error ? error.message : 'Failed to update constraint');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field: keyof CreateConstraintRequest, value: string | number | undefined) => {
+  const handleInputChange = (field: keyof UpdateConstraintRequest, value: string | number | boolean | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -116,6 +141,29 @@ const CreateConstraint: React.FC = () => {
     }).format(value);
   };
 
+  if (initialLoading) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!constraint) {
+    return (
+      <div className="p-8">
+        <div className="text-center">
+          <p className="text-gray-600">Constraint not found</p>
+          <Link to="/constraints" className="text-blue-600 hover:text-blue-700">
+            Back to Constraints
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       <div className="mb-6">
@@ -126,34 +174,30 @@ const CreateConstraint: React.FC = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Constraints
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Create New Constraint</h1>
-        <p className="text-gray-600 mt-1">Set up automated trading rules for a stock symbol</p>
+        <h1 className="text-2xl font-bold text-gray-900">Edit Constraint</h1>
+        <p className="text-gray-600 mt-1">Modify trading rules for {constraint.stockSymbol}</p>
       </div>
 
       <div className="max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Stock Symbol */}
+          {/* Status Toggle */}
           <div className="card">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Stock Information</h3>
-            <div>
-              <label className="label">
-                Stock Symbol *
-              </label>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Status</h3>
+            <div className="flex items-center gap-3">
               <input
-                type="text"
-                value={formData.stockSymbol}
-                onChange={(e) => handleInputChange('stockSymbol', e.target.value.toUpperCase())}
-                className={`input ${errors.stockSymbol ? 'border-red-500' : ''}`}
-                placeholder="e.g., AAPL, GOOGL, MSFT"
-                maxLength={5}
+                type="checkbox"
+                id="isActive"
+                checked={formData.isActive ?? constraint.isActive}
+                onChange={(e) => handleInputChange('isActive', e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              {errors.stockSymbol && (
-                <p className="error-text">{errors.stockSymbol}</p>
-              )}
-              <p className="text-sm text-gray-500 mt-1">
-                Enter the stock ticker symbol (1-5 letters)
-              </p>
+              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                Active constraint
+              </label>
             </div>
+            <p className="text-sm text-gray-500 mt-2">
+              When active, this constraint will be evaluated during market hours
+            </p>
           </div>
 
           {/* Buy Trigger */}
@@ -168,12 +212,12 @@ const CreateConstraint: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="label">
-                  Trigger Percentage *
+                  Trigger Percentage
                 </label>
                 <div className="relative">
                   <input
                     type="number"
-                    value={formData.buyTriggerPercent}
+                    value={formData.buyTriggerPercent ?? constraint.buyTriggerPercent}
                     onChange={(e) => handleInputChange('buyTriggerPercent', parseFloat(e.target.value))}
                     className={`input pr-8 ${errors.buyTriggerPercent ? 'border-red-500' : ''}`}
                     step="0.1"
@@ -185,19 +229,16 @@ const CreateConstraint: React.FC = () => {
                 {errors.buyTriggerPercent && (
                   <p className="error-text">{errors.buyTriggerPercent}</p>
                 )}
-                <p className="text-sm text-gray-500 mt-1">
-                  Buy when price drops by this percentage
-                </p>
               </div>
 
               <div>
                 <label className="label">
-                  Buy Amount *
+                  Buy Amount
                 </label>
                 <div className="relative">
                   <input
                     type="number"
-                    value={formData.buyAmount}
+                    value={formData.buyAmount ?? constraint.buyAmount}
                     onChange={(e) => handleInputChange('buyAmount', parseFloat(e.target.value))}
                     className={`input pl-8 ${errors.buyAmount ? 'border-red-500' : ''}`}
                     step="100"
@@ -210,7 +251,7 @@ const CreateConstraint: React.FC = () => {
                   <p className="error-text">{errors.buyAmount}</p>
                 )}
                 <p className="text-sm text-gray-500 mt-1">
-                  Dollar amount to invest: {formatCurrency(formData.buyAmount)}
+                  {formatCurrency(formData.buyAmount ?? constraint.buyAmount)}
                 </p>
               </div>
             </div>
@@ -228,12 +269,12 @@ const CreateConstraint: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="label">
-                  Trigger Percentage *
+                  Trigger Percentage
                 </label>
                 <div className="relative">
                   <input
                     type="number"
-                    value={formData.sellTriggerPercent}
+                    value={formData.sellTriggerPercent ?? constraint.sellTriggerPercent}
                     onChange={(e) => handleInputChange('sellTriggerPercent', parseFloat(e.target.value))}
                     className={`input pr-8 ${errors.sellTriggerPercent ? 'border-red-500' : ''}`}
                     step="0.1"
@@ -245,19 +286,16 @@ const CreateConstraint: React.FC = () => {
                 {errors.sellTriggerPercent && (
                   <p className="error-text">{errors.sellTriggerPercent}</p>
                 )}
-                <p className="text-sm text-gray-500 mt-1">
-                  Sell when price rises by this percentage
-                </p>
               </div>
 
               <div>
                 <label className="label">
-                  Sell Amount *
+                  Sell Amount
                 </label>
                 <div className="relative">
                   <input
                     type="number"
-                    value={formData.sellAmount}
+                    value={formData.sellAmount ?? constraint.sellAmount}
                     onChange={(e) => handleInputChange('sellAmount', parseFloat(e.target.value))}
                     className={`input pl-8 ${errors.sellAmount ? 'border-red-500' : ''}`}
                     step="100"
@@ -270,13 +308,13 @@ const CreateConstraint: React.FC = () => {
                   <p className="error-text">{errors.sellAmount}</p>
                 )}
                 <p className="text-sm text-gray-500 mt-1">
-                  Dollar amount to sell: {formatCurrency(formData.sellAmount)}
+                  {formatCurrency(formData.sellAmount ?? constraint.sellAmount)}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Profit Target (Optional) */}
+          {/* Profit Target */}
           <div className="card">
             <div className="flex items-center gap-2 mb-4">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -292,7 +330,7 @@ const CreateConstraint: React.FC = () => {
               <div className="relative">
                 <input
                   type="number"
-                  value={formData.profitTriggerPercent || ''}
+                  value={formData.profitTriggerPercent ?? constraint.profitTriggerPercent ?? ''}
                   onChange={(e) => handleInputChange('profitTriggerPercent', e.target.value ? parseFloat(e.target.value) : undefined)}
                   className={`input pr-8 ${errors.profitTriggerPercent ? 'border-red-500' : ''}`}
                   step="0.1"
@@ -306,22 +344,8 @@ const CreateConstraint: React.FC = () => {
                 <p className="error-text">{errors.profitTriggerPercent}</p>
               )}
               <p className="text-sm text-gray-500 mt-1">
-                Sell when profit reaches this percentage (based on average cost)
+                Leave empty to disable profit target
               </p>
-            </div>
-          </div>
-
-          {/* Warning */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-medium text-yellow-800">Important Notice</h4>
-                <p className="text-sm text-yellow-700 mt-1">
-                  This is a demo trading platform. No real trades will be executed. 
-                  Constraints will be evaluated against real market data for simulation purposes only.
-                </p>
-              </div>
             </div>
           </div>
 
@@ -332,7 +356,7 @@ const CreateConstraint: React.FC = () => {
               disabled={loading}
               className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Creating...' : 'Create Constraint'}
+              {loading ? 'Updating...' : 'Update Constraint'}
             </button>
             <Link
               to="/constraints"
@@ -347,4 +371,4 @@ const CreateConstraint: React.FC = () => {
   );
 };
 
-export default CreateConstraint;
+export default EditConstraint;

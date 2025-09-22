@@ -7,26 +7,27 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Constraints from './components/Constraints/Constraints';
 import CreateConstraint from './components/Constraints/CreateConstraint';
+import EditConstraint from './components/Constraints/EditConstraint';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = authService.isAuthenticated();
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return <>{children}</>;
 };
 
 // Public Route Component (redirect if authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = authService.isAuthenticated();
-  
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return <>{children}</>;
 };
 
@@ -55,6 +56,7 @@ function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="constraints" element={<Constraints />} />
         <Route path="constraints/new" element={<CreateConstraint />} />
+        <Route path="constraints/edit/:id" element={<EditConstraint />} />
         <Route path="analytics" element={<div className="p-8">Analytics Page (Coming Soon)</div>} />
         <Route path="trades" element={<div className="p-8">Trade History Page (Coming Soon)</div>} />
         <Route path="backtest" element={<div className="p-8">Backtest Page (Coming Soon)</div>} />

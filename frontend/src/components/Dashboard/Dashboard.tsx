@@ -2,8 +2,9 @@ import React from 'react';
 import { useQuery } from 'react-query';
 import { portfolioService } from '../../services/portfolio';
 import PortfolioSummary from './PortfolioSummary';
-import PositionList from './PositionList';
+import ConstraintPositionList from './ConstraintPositionList';
 import QuickActions from './QuickActions';
+import ConstraintsSummary from './ConstraintsSummary';
 import { RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -74,7 +75,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Portfolio Summary */}
-      {portfolio && (
+      {portfolio && portfolio.positions && portfolio.positions.length > 0 && (
         <div className="mb-8">
           <PortfolioSummary portfolio={portfolio} />
         </div>
@@ -82,19 +83,15 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Positions */}
+        {/* Constraint Positions */}
         <div className="lg:col-span-2">
-          {portfolio && (
-            <PositionList 
-              positions={portfolio.positions}
-              onRefresh={refetchPortfolio}
-            />
-          )}
+          <ConstraintPositionList />
         </div>
 
-        {/* Quick Actions */}
-        <div>
+        {/* Sidebar */}
+        <div className="space-y-6">
           <QuickActions />
+          <ConstraintsSummary />
         </div>
       </div>
     </div>

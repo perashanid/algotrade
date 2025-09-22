@@ -36,6 +36,25 @@ export interface Position {
   lastUpdated: string;
 }
 
+export interface ConstraintPosition {
+  stockSymbol: string;
+  constraintName?: string;
+  constraintType: 'individual' | 'group';
+  isActive: boolean;
+  buyTriggerPercent: number;
+  sellTriggerPercent: number;
+  profitTriggerPercent?: number;
+  buyAmount: number;
+  sellAmount: number;
+  currentPrice?: number;
+  quantity: number;
+  averageCost?: number;
+  marketValue: number;
+  unrealizedPnl: number;
+  unrealizedPnlPercent: number;
+  status: 'watching' | 'position' | 'triggered';
+}
+
 export interface Portfolio {
   userId: string;
   totalValue: number;
@@ -122,6 +141,62 @@ export interface CreateConstraintRequest {
   profitTriggerPercent?: number;
   buyAmount: number;
   sellAmount: number;
+}
+
+export interface UpdateConstraintRequest {
+  buyTriggerPercent?: number;
+  sellTriggerPercent?: number;
+  profitTriggerPercent?: number;
+  buyAmount?: number;
+  sellAmount?: number;
+  isActive?: boolean;
+}
+
+export interface StockGroup {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  color: string;
+  stocks: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConstraintGroup {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  buyTriggerPercent: number;
+  sellTriggerPercent: number;
+  profitTriggerPercent?: number;
+  buyAmount: number;
+  sellAmount: number;
+  isActive: boolean;
+  stocks: string[];
+  stockGroups: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateConstraintGroupRequest {
+  name: string;
+  description?: string;
+  buyTriggerPercent: number;
+  sellTriggerPercent: number;
+  profitTriggerPercent?: number;
+  buyAmount: number;
+  sellAmount: number;
+  stocks: string[];
+  stockGroups: string[];
+}
+
+export interface CreateStockGroupRequest {
+  name: string;
+  description?: string;
+  color?: string;
+  stocks: string[];
 }
 
 export interface LoginRequest {
