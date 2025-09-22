@@ -3,8 +3,8 @@ import { useQuery } from 'react-query';
 import { portfolioService } from '../../services/portfolio';
 import PortfolioSummary from './PortfolioSummary';
 import ConstraintPositionList from './ConstraintPositionList';
-import QuickActions from './QuickActions';
 import ConstraintsSummary from './ConstraintsSummary';
+import BookedPnL from './BookedPnL';
 import { RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -83,14 +83,14 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Constraint Positions */}
-        <div className="lg:col-span-2">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-8">
+          <BookedPnL />
           <ConstraintPositionList />
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <QuickActions />
           <ConstraintsSummary />
         </div>
       </div>

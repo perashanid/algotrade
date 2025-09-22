@@ -16,7 +16,9 @@
     "test:frontend": "cd frontend && npm test",
     "setup": "cd backend && npm run setup",
     "migrate": "cd backend && npm run migrate",
-    "seed:demo": "cd backend && npm run seed:demo"
+    "migrate:v2": "cd backend && npm run migrate:v2",
+    "seed:demo": "cd backend && npm run seed:demo",
+    "seed:stock-groups": "cd backend && npm run seed:stock-groups"
   },
   "keywords": ["trading", "algorithmic", "portfolio", "stocks", "finnhub"],
   "author": "",

@@ -2,8 +2,14 @@ import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables from the root .env file
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+// Load environment variables - backend .env takes precedence
+dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../../.env'), override: false });
+
+// Override DATABASE_URL if it's still pointing to localhost
+if (process.env.DATABASE_URL?.includes('localhost')) {
+  process.env.DATABASE_URL = 'postgresql://test_ndo2_user:vAOUnFxDqVJxnNQLVuXGMaQhdABHqQqV@dpg-d358vt33fgac73b8tv5g-a.singapore-postgres.render.com/test_ndo2';
+}
 
 // PostgreSQL connection pool
 export const pool = new Pool({

@@ -77,6 +77,63 @@ export class TradeHistoryModel {
     return result.rows.map(row => this.mapRowToTradeHistory(row));
   }
 
+  static async getClosedPositions(userId: string): Promise<any[]> {
+    const query = `
+      WITH position_trades AS (
+        SELECT 
+          stock_symbol,
+          constraint_id,
+          SUM(CASE WHEN trade_type = 'BUY' THEN quantity ELSE -quantity END) as net_quantity,
+          SUM(CASE WHEN trade_type = 'BUY' THEN quantity * price ELSE 0 END) as total_buy_value,
+          SUM(CASE WHEN trade_type = 'BUY' THEN quantity ELSE 0 END) as total_buy_quantity,
+          SUM(CASE WHEN trade_type = 'SELL' THEN quantity * price ELSE 0 END) as total_sell_value,
+          SUM(CASE WHEN trade_type = 'SELL' THEN quantity ELSE 0 END) as total_sell_quantity,
+          MIN(CASE WHEN trade_type = 'BUY' THEN executed_at END) as first_buy,
+          MAX(CASE WHEN trade_type = 'SELL' THEN executed_at END) as last_sell
+        FROM trade_history
+        WHERE user_id = $1
+        GROUP BY stock_symbol, constraint_id
+        HAVING SUM(CASE WHEN trade_type = 'BUY' THEN quantity ELSE -quantity END) <= 0
+      )
+      SELECT 
+        uuid_generate_v4() as id,
+        stock_symbol,
+        constraint_id,
+        total_buy_quantity as quantity,
+        CASE WHEN total_buy_quantity > 0 THEN total_buy_value / total_buy_quantity ELSE 0 END as average_cost,
+        CASE WHEN total_sell_quantity > 0 THEN total_sell_value / total_sell_quantity ELSE 0 END as exit_price,
+        (total_sell_value - total_buy_value) as realized_pnl,
+        CASE WHEN total_buy_value > 0 THEN ((total_sell_value - total_buy_value) / total_buy_value) * 100 ELSE 0 END as realized_pnl_percent,
+        CASE WHEN first_buy IS NOT NULL AND last_sell IS NOT NULL 
+             THEN EXTRACT(DAY FROM (last_sell - first_buy)) 
+             ELSE 0 END as holding_days,
+        first_buy as opened_at,
+        last_sell as closed_at,
+        'individual' as constraint_type,
+        NULL as constraint_name
+      FROM position_trades
+      WHERE total_buy_quantity > 0 AND total_sell_quantity > 0
+      ORDER BY last_sell DESC
+    `;
+    
+    const result = await pool.query(query, [userId]);
+    return result.rows.map(row => ({
+      id: row.id,
+      stockSymbol: row.stock_symbol,
+      constraintId: row.constraint_id,
+      constraintName: row.constraint_name,
+      constraintType: row.constraint_type,
+      quantity: parseFloat(row.quantity),
+      averageCost: parseFloat(row.average_cost),
+      exitPrice: parseFloat(row.exit_price),
+      realizedPnl: parseFloat(row.realized_pnl),
+      realizedPnlPercent: parseFloat(row.realized_pnl_percent),
+      holdingDays: parseInt(row.holding_days),
+      openedAt: row.opened_at,
+      closedAt: row.closed_at
+    }));
+  }
+
   static async getTradeStatistics(userId: string, startDate?: Date, endDate?: Date): Promise<{
     totalTrades: number;
     buyTrades: number;

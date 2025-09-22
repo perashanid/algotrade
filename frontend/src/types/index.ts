@@ -38,6 +38,7 @@ export interface Position {
 
 export interface ConstraintPosition {
   stockSymbol: string;
+  constraintId?: string;
   constraintName?: string;
   constraintType: 'individual' | 'group';
   isActive: boolean;
@@ -53,6 +54,22 @@ export interface ConstraintPosition {
   unrealizedPnl: number;
   unrealizedPnlPercent: number;
   status: 'watching' | 'position' | 'triggered';
+}
+
+export interface ClosedPosition {
+  id: string;
+  stockSymbol: string;
+  constraintId?: string;
+  constraintName?: string;
+  constraintType: 'individual' | 'group';
+  quantity: number;
+  averageCost: number;
+  exitPrice: number;
+  realizedPnl: number;
+  realizedPnlPercent: number;
+  holdingDays: number;
+  openedAt: string;
+  closedAt: string;
 }
 
 export interface Portfolio {

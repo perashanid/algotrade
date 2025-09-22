@@ -106,6 +106,42 @@ export class ConstraintGroupModel {
     return result.rows[0] ? this.mapRowToConstraintGroup(result.rows[0]) : null;
   }
 
+  static async update(constraintId: string, userId: string, updates: Partial<ConstraintGroup>): Promise<ConstraintGroup | null> {
+    const allowedFields = [
+      'name', 'description', 'buy_trigger_percent', 'sell_trigger_percent', 
+      'profit_trigger_percent', 'buy_amount', 'sell_amount', 'is_active'
+    ];
+    
+    const updateFields: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+      if (allowedFields.includes(dbField) && value !== undefined) {
+        updateFields.push(`${dbField} = $${paramIndex}`);
+        values.push(value);
+        paramIndex++;
+      }
+    });
+    
+    if (updateFields.length === 0) {
+      return await this.findById(constraintId, userId);
+    }
+    
+    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(constraintId, userId);
+    
+    const query = `
+      UPDATE constraint_groups
+      SET ${updateFields.join(', ')}
+      WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}
+    `;
+    
+    await pool.query(query, values);
+    return await this.findById(constraintId, userId);
+  }
+
   static async toggleActive(constraintId: string, userId: string, isActive: boolean): Promise<ConstraintGroup | null> {
     const query = `
       UPDATE constraint_groups

@@ -9,6 +9,7 @@ router.use(authenticateToken);
 
 // Trade history endpoints
 router.get('/', TradeHistoryController.getTradeHistory);
+router.get('/closed-positions', TradeHistoryController.getClosedPositions);
 router.get('/constraint/:constraintId', TradeHistoryController.getTradesByConstraint);
 router.get('/statistics', TradeHistoryController.getTradeStatistics);
 router.get('/analytics', TradeHistoryController.getTradeAnalytics);
