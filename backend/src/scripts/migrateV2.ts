@@ -3,7 +3,13 @@ import { Pool } from 'pg';
 import path from 'path';
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../../.env'), override: false });
+
+// Override DATABASE_URL if it's still pointing to localhost
+if (process.env.DATABASE_URL?.includes('localhost')) {
+  process.env.DATABASE_URL = 'postgresql://test_ndo2_user:vAOUnFxDqVJxnNQLVuXGMaQhdABHqQqV@dpg-d358vt33fgac73b8tv5g-a.singapore-postgres.render.com/test_ndo2';
+}
 
 async function migrateToV2() {
   const pool = new Pool({
@@ -97,11 +103,13 @@ async function migrateToV2() {
       CREATE INDEX IF NOT EXISTS idx_constraint_stock_groups_constraint_id ON constraint_stock_groups(constraint_group_id);
     `);
 
-    // Add triggers for updated_at
+    // Add triggers for updated_at (if they don't exist)
     await client.query(`
+      DROP TRIGGER IF EXISTS update_stock_groups_updated_at ON stock_groups;
       CREATE TRIGGER update_stock_groups_updated_at BEFORE UPDATE ON stock_groups
         FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
       
+      DROP TRIGGER IF EXISTS update_constraint_groups_updated_at ON constraint_groups;
       CREATE TRIGGER update_constraint_groups_updated_at BEFORE UPDATE ON constraint_groups
         FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
     `);

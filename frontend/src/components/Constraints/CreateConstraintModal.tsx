@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, TrendingDown, TrendingUp, Target, DollarSign, Percent, AlertCircle, Search, Tag, Users } from 'lucide-react';
+import { X, Plus, TrendingDown, TrendingUp, Target, DollarSign, Percent, AlertCircle, Search, Tag, Users } from 'lucide-react';
 import { CreateConstraintGroupRequest, StockGroup } from '../../types';
+import { stockGroupsService } from '../../services/stockGroups';
 import toast from 'react-hot-toast';
 
 interface CreateConstraintModalProps {
@@ -8,13 +9,15 @@ interface CreateConstraintModalProps {
   onClose: () => void;
   onSubmit: (constraint: CreateConstraintGroupRequest) => Promise<void>;
   stockGroups: StockGroup[];
+  onStockGroupsUpdate?: () => void;
 }
 
 const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  stockGroups
+  stockGroups,
+  onStockGroupsUpdate
 }) => {
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -33,17 +36,60 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
   const [stockSearch, setStockSearch] = useState('');
   const [customStock, setCustomStock] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [newGroupData, setNewGroupData] = useState({
+    name: '',
+    description: '',
+    color: '#3B82F6',
+    stocks: [] as string[]
+  });
+  const [groupStockSearch, setGroupStockSearch] = useState('');
 
-  // Popular stocks for quick selection
+  // Comprehensive stock list for search
+  const allStocks = [
+    // Technology
+    'AAPL', 'GOOGL', 'GOOG', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX', 'ADBE', 'CRM', 'ORCL', 'INTC', 'AMD', 'QCOM', 'AVGO', 'TXN', 'CSCO', 'IBM', 'UBER', 'LYFT', 'SNAP', 'TWTR', 'PINS', 'SQ', 'PYPL', 'SHOP', 'ROKU', 'ZM', 'DOCU', 'OKTA', 'CRWD', 'ZS', 'DDOG', 'SNOW', 'PLTR', 'RBLX',
+    // Financial
+    'JPM', 'BAC', 'WFC', 'GS', 'MS', 'C', 'AXP', 'BLK', 'SCHW', 'USB', 'PNC', 'TFC', 'COF', 'BK', 'STT', 'NTRS', 'RF', 'CFG', 'KEY', 'FITB', 'HBAN', 'ZION', 'CMA', 'MTB', 'SIVB', 'ALLY', 'V', 'MA', 'SPGI', 'MCO', 'ICE', 'CME', 'NDAQ', 'CBOE',
+    // Healthcare
+    'JNJ', 'PFE', 'UNH', 'ABBV', 'MRK', 'TMO', 'ABT', 'CVS', 'DHR', 'BMY', 'AMGN', 'GILD', 'MDT', 'CI', 'ANTM', 'HUM', 'CNC', 'WBA', 'BAX', 'BDX', 'SYK', 'BSX', 'EW', 'IDXX', 'REGN', 'VRTX', 'BIIB', 'ILMN', 'MRNA', 'ZTS', 'DXCM', 'ISRG',
+    // Consumer Discretionary
+    'AMZN', 'TSLA', 'HD', 'MCD', 'NKE', 'SBUX', 'LOW', 'TJX', 'BKNG', 'DIS', 'CMCSA', 'NFLX', 'GM', 'F', 'MAR', 'HLT', 'MGM', 'LVS', 'WYNN', 'CCL', 'RCL', 'NCLH', 'YUM', 'QSR', 'CMG', 'DPZ', 'ORLY', 'AZO', 'AAP', 'GPC',
+    // Consumer Staples
+    'WMT', 'PG', 'KO', 'PEP', 'COST', 'WBA', 'EL', 'CL', 'KMB', 'GIS', 'K', 'HSY', 'MKC', 'SJM', 'CAG', 'CPB', 'HRL', 'TSN', 'TAP', 'STZ', 'BF.B', 'PM', 'MO', 'BTI',
+    // Energy
+    'XOM', 'CVX', 'COP', 'EOG', 'SLB', 'MPC', 'VLO', 'PSX', 'HES', 'OXY', 'DVN', 'FANG', 'MRO', 'APA', 'HAL', 'BKR', 'OIH', 'XLE', 'USO', 'UCO',
+    // Industrials
+    'BA', 'CAT', 'GE', 'MMM', 'HON', 'UPS', 'RTX', 'LMT', 'NOC', 'GD', 'DE', 'EMR', 'ETN', 'ITW', 'PH', 'CMI', 'FDX', 'WM', 'RSG', 'PCAR', 'NSC', 'UNP', 'CSX', 'KSU',
+    // Materials
+    'LIN', 'APD', 'ECL', 'SHW', 'FCX', 'NEM', 'GOLD', 'AA', 'X', 'CLF', 'NUE', 'STLD', 'RS', 'VMC', 'MLM', 'NTR', 'CF', 'MOS', 'FMC', 'LYB', 'DOW', 'DD', 'PPG', 'RPM',
+    // Real Estate
+    'AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'EXR', 'AVB', 'EQR', 'WELL', 'DLR', 'BXP', 'VTR', 'ESS', 'MAA', 'UDR', 'CPT', 'FRT', 'REG', 'KIM', 'SPG', 'O', 'STOR',
+    // Utilities
+    'NEE', 'DUK', 'SO', 'D', 'AEP', 'EXC', 'XEL', 'SRE', 'PEG', 'ED', 'EIX', 'WEC', 'AWK', 'DTE', 'ES', 'FE', 'AEE', 'CMS', 'NI', 'LNT', 'EVRG', 'PNW', 'ATO', 'NWE',
+    // Communication Services
+    'GOOGL', 'META', 'NFLX', 'DIS', 'CMCSA', 'VZ', 'T', 'CHTR', 'TMUS', 'DISH', 'TWTR', 'SNAP', 'PINS', 'MTCH', 'IAC', 'NWSA', 'NYT', 'FOXA', 'PARA', 'WBD'
+  ];
+
+  // Get all stocks from selected stock groups
+  const stocksFromGroups = formData.stockGroups.reduce((acc: string[], groupId) => {
+    const group = stockGroups.find(g => g.id === groupId);
+    return group ? [...acc, ...group.stocks] : acc;
+  }, []);
+
+  // Combine all available stocks (predefined + from selected groups)
+  const allAvailableStocks = [...new Set([...allStocks, ...stocksFromGroups])].sort();
+
+  const filteredStocks = allAvailableStocks.filter(stock => 
+    stock.toLowerCase().includes(stockSearch.toLowerCase()) &&
+    !formData.stocks.includes(stock)
+  );
+
+  // Popular stocks for quick selection (subset of all stocks)
   const popularStocks = [
     'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX',
     'JPM', 'BAC', 'WFC', 'GS', 'JNJ', 'PFE', 'UNH', 'WMT', 'HD', 'NKE'
   ];
-
-  const filteredStocks = popularStocks.filter(stock => 
-    stock.toLowerCase().includes(stockSearch.toLowerCase()) &&
-    !formData.stocks.includes(stock)
-  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -65,6 +111,8 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
       setErrors({});
     }
   }, [isOpen]);
+
+
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -171,6 +219,79 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
     return individualStocks + groupStocks;
   };
 
+  const handleCreateNewGroup = () => {
+    setShowCreateGroup(true);
+    setNewGroupData({
+      name: '',
+      description: '',
+      color: '#3B82F6',
+      stocks: []
+    });
+    setGroupStockSearch('');
+  };
+
+  const handleCancelCreateGroup = () => {
+    setShowCreateGroup(false);
+    setNewGroupData({
+      name: '',
+      description: '',
+      color: '#3B82F6',
+      stocks: []
+    });
+    setGroupStockSearch('');
+  };
+
+  const handleSaveNewGroup = async () => {
+    if (!newGroupData.name.trim()) {
+      toast.error('Group name is required');
+      return;
+    }
+    if (newGroupData.stocks.length === 0) {
+      toast.error('Please add at least one stock to the group');
+      return;
+    }
+
+    try {
+      await stockGroupsService.createStockGroup({
+        name: newGroupData.name,
+        description: newGroupData.description,
+        color: newGroupData.color,
+        stocks: newGroupData.stocks
+      });
+      toast.success('Stock group created successfully!');
+      setShowCreateGroup(false);
+      if (onStockGroupsUpdate) {
+        onStockGroupsUpdate();
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create stock group');
+    }
+  };
+
+  const addStockToNewGroup = (stock: string) => {
+    if (!newGroupData.stocks.includes(stock)) {
+      setNewGroupData(prev => ({
+        ...prev,
+        stocks: [...prev.stocks, stock]
+      }));
+    }
+    setGroupStockSearch('');
+  };
+
+  const removeStockFromNewGroup = (stock: string) => {
+    setNewGroupData(prev => ({
+      ...prev,
+      stocks: prev.stocks.filter(s => s !== stock)
+    }));
+  };
+
+  const filteredGroupStocks = allAvailableStocks.filter(stock => 
+    stock.toLowerCase().includes(groupStockSearch.toLowerCase()) &&
+    !newGroupData.stocks.includes(stock)
+  );
+
+
+
   if (!isOpen) return null;
 
   return (
@@ -241,12 +362,123 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                   />
                 </div>
 
-                {/* Stock Groups */}
+                {/* Individual Stocks */}
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Stock Groups
+                    <Tag className="h-5 w-5" />
+                    Individual Stocks
                   </h3>
+                  
+                  {/* Search and Add Custom */}
+                  <div className="flex gap-2 mb-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={stockSearch}
+                        onChange={(e) => setStockSearch(e.target.value)}
+                        className="input pl-10"
+                        placeholder="Type stock name or symbol..."
+                      />
+                      
+                      {/* Autocomplete Dropdown */}
+                      {stockSearch && filteredStocks.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                          {filteredStocks.map((stock) => (
+                            <button
+                              key={stock}
+                              onClick={() => {
+                                addStock(stock);
+                                setStockSearch('');
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                            >
+                              <div className="font-medium text-gray-900">{stock}</div>
+                              <div className="text-sm text-gray-500">Click to add</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={customStock}
+                        onChange={(e) => setCustomStock(e.target.value.toUpperCase())}
+                        className="input w-24"
+                        placeholder="SYMBOL"
+                        maxLength={5}
+                      />
+                      <button
+                        onClick={addCustomStock}
+                        disabled={!customStock.trim() || !/^[A-Z]{1,5}$/.test(customStock.trim())}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Popular Stocks - Only show when not searching */}
+                  {!stockSearch && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Popular Stocks</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {popularStocks.filter(stock => !formData.stocks.includes(stock)).slice(0, 12).map((stock) => (
+                          <button
+                            key={stock}
+                            onClick={() => addStock(stock)}
+                            className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors text-sm"
+                          >
+                            {stock}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Selected Stocks */}
+                  {formData.stocks.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Selected Stocks ({formData.stocks.length})</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.stocks.map((stock) => (
+                          <div
+                            key={stock}
+                            className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full"
+                          >
+                            <span className="text-sm font-medium">{stock}</span>
+                            <button
+                              onClick={() => removeStock(stock)}
+                              className="hover:bg-blue-200 rounded-full p-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {errors.stocks && <p className="error-text">{errors.stocks}</p>}
+                </div>
+
+                {/* Stock Groups */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Stock Groups
+                    </h3>
+                    <button
+                      onClick={handleCreateNewGroup}
+                      className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center gap-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create New Group
+                    </button>
+                  </div>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {stockGroups.map((group) => (
                       <div
@@ -293,82 +525,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                   </div>
                 </div>
 
-                {/* Individual Stocks */}
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                    <Tag className="h-5 w-5" />
-                    Individual Stocks
-                  </h3>
-                  
-                  {/* Search and Add Custom */}
-                  <div className="flex gap-2 mb-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={stockSearch}
-                        onChange={(e) => setStockSearch(e.target.value)}
-                        className="input pl-10"
-                        placeholder="Search stocks..."
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={customStock}
-                        onChange={(e) => setCustomStock(e.target.value.toUpperCase())}
-                        className="input w-24"
-                        placeholder="SYMBOL"
-                        maxLength={5}
-                      />
-                      <button
-                        onClick={addCustomStock}
-                        disabled={!customStock.trim() || !/^[A-Z]{1,5}$/.test(customStock.trim())}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* Popular Stocks */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {filteredStocks.slice(0, 12).map((stock) => (
-                      <button
-                        key={stock}
-                        onClick={() => addStock(stock)}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors text-sm"
-                      >
-                        {stock}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Selected Stocks */}
-                  {formData.stocks.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Selected Stocks ({formData.stocks.length})</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {formData.stocks.map((stock) => (
-                          <div
-                            key={stock}
-                            className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full"
-                          >
-                            <span className="text-sm font-medium">{stock}</span>
-                            <button
-                              onClick={() => removeStock(stock)}
-                              className="hover:bg-blue-200 rounded-full p-0.5"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {errors.stocks && <p className="error-text">{errors.stocks}</p>}
-                </div>
 
                 {/* Summary */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -565,6 +722,145 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Create New Stock Group Modal */}
+      {showCreateGroup && (
+        <div className="fixed inset-0 z-60 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={handleCancelCreateGroup} />
+            
+            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Create New Stock Group</h2>
+                  <p className="text-gray-600 mt-1">Create a custom group of stocks for easy selection</p>
+                </div>
+                <button
+                  onClick={handleCancelCreateGroup}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 overflow-y-auto max-h-[60vh]">
+                <div className="space-y-4">
+                  {/* Group Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Group Name *</label>
+                    <input
+                      type="text"
+                      value={newGroupData.name}
+                      onChange={(e) => setNewGroupData(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., My Tech Stocks"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                    <textarea
+                      value={newGroupData.description}
+                      onChange={(e) => setNewGroupData(prev => ({ ...prev, description: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                      placeholder="Describe this stock group..."
+                    />
+                  </div>
+
+                  {/* Color */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={newGroupData.color}
+                        onChange={(e) => setNewGroupData(prev => ({ ...prev, color: e.target.value }))}
+                        className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+                      />
+                      <span className="text-sm text-gray-600">{newGroupData.color}</span>
+                    </div>
+                  </div>
+
+                  {/* Stock Search */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Add Stocks</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={groupStockSearch}
+                        onChange={(e) => setGroupStockSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Search for stocks to add..."
+                      />
+                      
+                      {/* Stock Search Dropdown */}
+                      {groupStockSearch && filteredGroupStocks.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                          {filteredGroupStocks.slice(0, 10).map((stock) => (
+                            <button
+                              key={stock}
+                              onClick={() => addStockToNewGroup(stock)}
+                              className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                            >
+                              <div className="font-medium text-gray-900">{stock}</div>
+                              <div className="text-sm text-gray-500">Click to add</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected Stocks */}
+                  {newGroupData.stocks.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Selected Stocks ({newGroupData.stocks.length})
+                      </label>
+                      <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
+                        {newGroupData.stocks.map((stock) => (
+                          <div
+                            key={stock}
+                            className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full"
+                          >
+                            <span className="text-sm font-medium text-gray-900">{stock}</span>
+                            <button
+                              onClick={() => removeStockFromNewGroup(stock)}
+                              className="hover:bg-gray-100 rounded-full p-0.5"
+                            >
+                              <X className="h-3 w-3 text-gray-500" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={handleCancelCreateGroup}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveNewGroup}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Create Group
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

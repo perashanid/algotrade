@@ -4,6 +4,29 @@ import { TradeHistoryModel } from '../models/TradeHistory';
 import { TradeHistory } from '../types';
 
 export class TradeHistoryController {
+  static async getClosedPositions(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const closedPositions = await TradeHistoryModel.getClosedPositions(userId);
+
+      res.json({
+        success: true,
+        data: closedPositions,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error('Get closed positions error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'CLOSED_POSITIONS_ERROR',
+          message: 'Failed to fetch closed positions'
+        },
+        timestamp: new Date()
+      });
+    }
+  }
+
   static async getTradeHistory(req: AuthRequest, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;

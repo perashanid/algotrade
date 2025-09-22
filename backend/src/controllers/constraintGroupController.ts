@@ -102,6 +102,69 @@ export class ConstraintGroupController {
     }
   }
 
+  static async updateConstraintGroup(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const constraintId = req.params.id;
+      const updates = req.body;
+
+      // Validate triggers if provided
+      if (updates.buyTriggerPercent !== undefined && updates.buyTriggerPercent >= 0) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Buy trigger must be negative (price drop)'
+          },
+          timestamp: new Date()
+        });
+        return;
+      }
+
+      if (updates.sellTriggerPercent !== undefined && updates.sellTriggerPercent <= 0) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Sell trigger must be positive (price rise)'
+          },
+          timestamp: new Date()
+        });
+        return;
+      }
+
+      const constraintGroup = await ConstraintGroupModel.update(constraintId, userId, updates);
+
+      if (!constraintGroup) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'CONSTRAINT_GROUP_NOT_FOUND',
+            message: 'Constraint group not found'
+          },
+          timestamp: new Date()
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: constraintGroup,
+        timestamp: new Date()
+      } as APIResponse<ConstraintGroup>);
+    } catch (error) {
+      console.error('Update constraint group error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'UPDATE_CONSTRAINT_GROUP_ERROR',
+          message: 'Failed to update constraint group'
+        },
+        timestamp: new Date()
+      });
+    }
+  }
+
   static async toggleConstraintGroup(req: AuthRequest, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;

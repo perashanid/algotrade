@@ -22,6 +22,16 @@ export const constraintGroupsService = {
     throw new Error(response.data.error?.message || 'Failed to create constraint group');
   },
 
+  async updateConstraintGroup(id: string, updates: Partial<ConstraintGroup>): Promise<ConstraintGroup> {
+    const response = await api.put<APIResponse<ConstraintGroup>>(`/constraint-groups/${id}`, updates);
+    
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    
+    throw new Error(response.data.error?.message || 'Failed to update constraint group');
+  },
+
   async toggleConstraintGroup(id: string, isActive: boolean): Promise<ConstraintGroup> {
     const response = await api.put<APIResponse<ConstraintGroup>>(`/constraint-groups/${id}/toggle`, { isActive });
     

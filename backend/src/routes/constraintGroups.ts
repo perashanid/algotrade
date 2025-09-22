@@ -13,6 +13,9 @@ router.get('/', ConstraintGroupController.getConstraintGroups);
 // POST /api/constraint-groups - Create new constraint group
 router.post('/', ConstraintGroupController.createConstraintGroup);
 
+// PUT /api/constraint-groups/:id - Update constraint group
+router.put('/:id', ConstraintGroupController.updateConstraintGroup);
+
 // PUT /api/constraint-groups/:id/toggle - Toggle constraint group active status
 router.put('/:id/toggle', ConstraintGroupController.toggleConstraintGroup);
 

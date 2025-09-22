@@ -4,7 +4,8 @@ import fs from 'fs';
 import path from 'path';
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../../.env'), override: false });
 
 async function runMigrations() {
   // Create a new pool specifically for migration
