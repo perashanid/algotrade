@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import authRoutes from './auth';
 import constraintRoutes from './constraints';
+import constraintGroupRoutes from './constraintGroups';
+import stockGroupRoutes from './stockGroups';
 import portfolioRoutes from './portfolio';
 import marketRoutes from './market';
 import analyticsRoutes from './analytics';
@@ -19,6 +21,8 @@ router.use(apiLimiter); // Apply general rate limiting to all other routes
 // Mount routes
 router.use('/auth', authRoutes);
 router.use('/constraints', constraintRoutes);
+router.use('/constraint-groups', constraintGroupRoutes);
+router.use('/stock-groups', stockGroupRoutes);
 router.use('/portfolio', portfolioRoutes);
 router.use('/market', marketRoutes);
 router.use('/analytics', analyticsRoutes);

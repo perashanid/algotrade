@@ -10,8 +10,10 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "migrate": "ts-node src/scripts/migrate.ts",
+    "migrate:v2": "ts-node src/scripts/migrateV2.ts",
     "seed:demo": "ts-node src/scripts/seedDemo.ts",
-    "setup": "ts-node src/scripts/setup.ts"
+    "setup": "ts-node src/scripts/setup.ts",
+    "clear:positions": "ts-node src/scripts/clearPositions.ts"
   },
   "dependencies": {
     "express": "^4.18.2",

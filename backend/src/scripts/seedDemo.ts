@@ -109,91 +109,9 @@ async function seedDemoData(client: any, userId: string) {
     );
   }
   
-  // Create demo positions (matching the actual schema)
-  const positions = [
-    {
-      stock_symbol: 'AAPL',
-      quantity: 50.0000,
-      average_cost: 175.50,
-      current_price: 182.30
-    },
-    {
-      stock_symbol: 'GOOGL',
-      quantity: 25.0000,
-      average_cost: 140.20,
-      current_price: 145.80
-    },
-    {
-      stock_symbol: 'MSFT',
-      quantity: 30.0000,
-      average_cost: 380.00,
-      current_price: 395.50
-    },
-    {
-      stock_symbol: 'JPM',
-      quantity: 40.0000,
-      average_cost: 155.75,
-      current_price: 162.20
-    },
-    {
-      stock_symbol: 'JNJ',
-      quantity: 35.0000,
-      average_cost: 168.90,
-      current_price: 171.45
-    }
-  ];
+  // No demo positions - positions will be created when constraints trigger trades
   
-  for (const position of positions) {
-    await client.query(
-      `INSERT INTO positions (user_id, stock_symbol, quantity, average_cost, current_price, last_updated)
-       VALUES ($1, $2, $3, $4, $5, NOW())
-       ON CONFLICT (user_id, stock_symbol) DO UPDATE SET
-         quantity = EXCLUDED.quantity,
-         average_cost = EXCLUDED.average_cost,
-         current_price = EXCLUDED.current_price,
-         last_updated = NOW()`,
-      [userId, position.stock_symbol, position.quantity, position.average_cost, position.current_price]
-    );
-  }
-  
-  // Create demo trade history (matching the actual schema)
-  const trades = [
-    {
-      stock_symbol: 'AAPL',
-      trade_type: 'BUY',
-      trigger_type: 'PRICE_DROP',
-      quantity: 50.0000,
-      price: 175.50,
-      trigger_price: 184.21, // 5% drop from this price
-      executed_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
-    },
-    {
-      stock_symbol: 'GOOGL',
-      trade_type: 'BUY',
-      trigger_type: 'PRICE_DROP',
-      quantity: 25.0000,
-      price: 140.20,
-      trigger_price: 150.75, // 7% drop from this price
-      executed_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) // 5 days ago
-    },
-    {
-      stock_symbol: 'MSFT',
-      trade_type: 'BUY',
-      trigger_type: 'PRICE_DROP',
-      quantity: 30.0000,
-      price: 380.00,
-      trigger_price: 395.83, // 4% drop from this price
-      executed_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
-    }
-  ];
-  
-  for (const trade of trades) {
-    await client.query(
-      `INSERT INTO trade_history (user_id, stock_symbol, trade_type, trigger_type, quantity, price, trigger_price, executed_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [userId, trade.stock_symbol, trade.trade_type, trade.trigger_type, trade.quantity, trade.price, trade.trigger_price, trade.executed_at]
-    );
-  }
+  // No demo trade history - trades will be created when constraints are triggered
   
   console.log('✅ Demo data seeded successfully');
 }
