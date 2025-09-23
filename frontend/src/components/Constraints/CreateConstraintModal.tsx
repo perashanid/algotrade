@@ -175,11 +175,15 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
   };
 
   const addStock = (stock: string) => {
+    console.log('Adding stock to constraint:', stock); // Debug log
     if (!formData.stocks.includes(stock)) {
       setFormData(prev => ({
         ...prev,
         stocks: [...prev.stocks, stock]
       }));
+      console.log('Stock added successfully'); // Debug log
+    } else {
+      console.log('Stock already exists in list'); // Debug log
     }
   };
 
@@ -318,11 +322,15 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
   };
 
   const addStockToNewGroup = (stock: string) => {
+    console.log('Adding stock to group:', stock); // Debug log
     if (!newGroupData.stocks.includes(stock)) {
       setNewGroupData(prev => ({
         ...prev,
         stocks: [...prev.stocks, stock]
       }));
+      console.log('Stock added to group successfully'); // Debug log
+    } else {
+      console.log('Stock already exists in group'); // Debug log
     }
     setGroupStockSearch('');
   };
