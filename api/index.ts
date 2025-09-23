@@ -6,7 +6,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -14,11 +14,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   }
 
   const { url, method } = req;
-  
+
   // Health check
   if (url === '/api/health') {
-    res.json({ 
-      status: 'ok', 
+    res.json({
+      status: 'ok',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development'
     });
@@ -28,17 +28,17 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   // Auth routes
   if (url?.startsWith('/api/auth/')) {
     if (url === '/api/auth/register' && method === 'POST') {
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: 'Register endpoint working',
         data: { test: true }
       });
       return;
     }
-    
+
     if (url === '/api/auth/login' && method === 'POST') {
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: 'Login endpoint working',
         data: { test: true }
       });
@@ -47,8 +47,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   }
 
   // Default response
-  res.status(404).json({ 
-    success: false, 
+  res.status(404).json({
+    success: false,
     error: 'Endpoint not found',
     url,
     method
