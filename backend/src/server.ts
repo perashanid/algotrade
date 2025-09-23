@@ -6,6 +6,7 @@ import path from 'path';
 import { initializeDatabase, closeDatabase } from './config/database';
 import { requestLogger, logger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { performanceMiddleware } from './middleware/performanceMonitor';
 import { PriceMonitorJob } from './jobs/priceMonitor';
 import routes from './routes';
 
@@ -30,6 +31,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging
 app.use(requestLogger);
+
+// Performance monitoring
+app.use(performanceMiddleware);
 
 // API routes
 app.use('/api', routes);
