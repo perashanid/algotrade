@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, X, Check } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Check, Search } from 'lucide-react';
 import { StockGroup, CreateStockGroupRequest } from '../../types';
 import { stockGroupsService } from '../../services/stockGroups';
+import { getStockInfo } from '../../data/stockDatabase';
+import StockSearchInput from '../Common/StockSearchInput';
 import toast from 'react-hot-toast';
 
 interface StockGroupManagerProps {
@@ -21,7 +23,7 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
     stocks: []
   });
   
-  const [stockInput, setStockInput] = useState('');
+
 
   const colors = [
     '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
@@ -35,7 +37,6 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
       color: '#3B82F6',
       stocks: []
     });
-    setStockInput('');
     setShowCreateForm(false);
     setEditingGroup(null);
   };
@@ -51,14 +52,12 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
     setShowCreateForm(true);
   };
 
-  const addStock = () => {
-    const stock = stockInput.toUpperCase().trim();
-    if (stock && /^[A-Z]{1,5}$/.test(stock) && !formData.stocks.includes(stock)) {
+  const addStock = (stock: string) => {
+    if (stock && !formData.stocks.includes(stock)) {
       setFormData(prev => ({
         ...prev,
         stocks: [...prev.stocks, stock]
       }));
-      setStockInput('');
     }
   };
 
@@ -116,12 +115,12 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">Stock Groups</h3>
-          <p className="text-gray-600 text-sm">Create custom groups of stocks for easier constraint management</p>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Stock Groups</h3>
+          <p className="text-gray-600 dark:text-gray-300 text-sm">Create custom groups of stocks for easier constraint management</p>
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          className="inline-flex items-center px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-sm"
         >
           <Plus className="h-4 w-4 mr-1" />
           New Group
@@ -133,15 +132,15 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex justify-between items-center">
-              <h4 className="font-medium text-gray-900">
+              <h4 className="font-medium text-gray-900 dark:text-white">
                 {editingGroup ? 'Edit Stock Group' : 'Create Stock Group'}
               </h4>
               <button
                 type="button"
                 onClick={resetForm}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
-                <X className="h-4 w-4 text-gray-500" />
+                <X className="h-4 w-4 text-gray-500 dark:text-gray-400" />
               </button>
             </div>
 
@@ -167,7 +166,7 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, color }))}
                       className={`w-8 h-8 rounded-full border-2 ${
-                        formData.color === color ? 'border-gray-400' : 'border-gray-200'
+                        formData.color === color ? 'border-gray-400 dark:border-gray-500' : 'border-gray-200 dark:border-gray-600'
                       }`}
                       style={{ backgroundColor: color }}
                     />
@@ -188,43 +187,34 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
 
             <div>
               <label className="label">Stocks *</label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={stockInput}
-                  onChange={(e) => setStockInput(e.target.value.toUpperCase())}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addStock())}
-                  className="input flex-1"
-                  placeholder="Enter stock symbol (e.g., AAPL)"
-                  maxLength={5}
+              <div className="mb-2">
+                <StockSearchInput 
+                  onStockSelect={addStock}
+                  placeholder="Search by company name or symbol (e.g., Apple, AAPL)..."
                 />
-                <button
-                  type="button"
-                  onClick={addStock}
-                  disabled={!stockInput.trim() || !/^[A-Z]{1,5}$/.test(stockInput.trim())}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
               </div>
 
               {formData.stocks.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {formData.stocks.map((stock) => (
-                    <div
-                      key={stock}
-                      className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                    >
-                      <span>{stock}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeStock(stock)}
-                        className="hover:bg-blue-200 rounded-full p-0.5"
+                  {formData.stocks.map((stock) => {
+                    const stockInfo = getStockInfo(stock);
+                    return (
+                      <div
+                        key={stock}
+                        className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm"
+                        title={stockInfo ? stockInfo.name : stock}
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+                        <span>{stock}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeStock(stock)}
+                          className="hover:bg-blue-200 dark:hover:bg-blue-900/50 rounded-full p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -233,14 +223,14 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
               <button
                 type="submit"
                 disabled={loading || !formData.name.trim() || formData.stocks.length === 0}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Saving...' : editingGroup ? 'Update Group' : 'Create Group'}
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Cancel
               </button>
@@ -259,42 +249,46 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
                   className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: group.color }}
                 />
-                <h4 className="font-medium text-gray-900">{group.name}</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white">{group.name}</h4>
               </div>
               <div className="flex gap-1">
                 <button
                   onClick={() => startEdit(group)}
-                  className="p-1 hover:bg-gray-100 rounded"
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                   title="Edit"
                 >
-                  <Edit className="h-4 w-4 text-gray-500" />
+                  <Edit className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                 </button>
                 <button
                   onClick={() => handleDelete(group)}
-                  className="p-1 hover:bg-gray-100 rounded"
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                   title="Delete"
                 >
-                  <Trash2 className="h-4 w-4 text-gray-500" />
+                  <Trash2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
             {group.description && (
-              <p className="text-sm text-gray-600 mb-3">{group.description}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{group.description}</p>
             )}
 
             <div className="flex flex-wrap gap-1">
-              {group.stocks.map((stock) => (
-                <span
-                  key={stock}
-                  className="text-xs bg-gray-100 px-2 py-1 rounded"
-                >
-                  {stock}
-                </span>
-              ))}
+              {group.stocks.map((stock) => {
+                const stockInfo = getStockInfo(stock);
+                return (
+                  <div
+                    key={stock}
+                    className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded"
+                    title={stockInfo ? stockInfo.name : stock}
+                  >
+                    {stock}
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="mt-3 text-xs text-gray-500">
+            <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
               {group.stocks.length} stocks • Created {new Date(group.createdAt).toLocaleDateString()}
             </div>
           </div>
@@ -303,10 +297,10 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
 
       {stockGroups.length === 0 && !showCreateForm && (
         <div className="text-center py-8">
-          <p className="text-gray-600 mb-4">No custom stock groups yet</p>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">No custom stock groups yet</p>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Your First Group

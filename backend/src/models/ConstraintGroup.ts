@@ -82,7 +82,31 @@ export class ConstraintGroupModel {
     `;
     
     const result = await pool.query(query, [userId]);
-    return result.rows.map(row => this.mapRowToConstraintGroup(row));
+    const constraintGroups = result.rows.map(row => this.mapRowToConstraintGroup(row));
+    
+    // Load individual stock overrides for each group
+    for (const group of constraintGroups) {
+      const overridesQuery = `
+        SELECT stock_symbol, buy_trigger_percent, sell_trigger_percent, 
+               profit_trigger_percent, buy_amount, sell_amount
+        FROM constraint_stock_overrides
+        WHERE constraint_group_id = $1
+      `;
+      const overridesResult = await pool.query(overridesQuery, [group.id]);
+      group.stockOverrides = {};
+      
+      for (const override of overridesResult.rows) {
+        group.stockOverrides[override.stock_symbol] = {
+          buyTriggerPercent: override.buy_trigger_percent ? parseFloat(override.buy_trigger_percent) : undefined,
+          sellTriggerPercent: override.sell_trigger_percent ? parseFloat(override.sell_trigger_percent) : undefined,
+          profitTriggerPercent: override.profit_trigger_percent ? parseFloat(override.profit_trigger_percent) : undefined,
+          buyAmount: override.buy_amount ? parseFloat(override.buy_amount) : undefined,
+          sellAmount: override.sell_amount ? parseFloat(override.sell_amount) : undefined
+        };
+      }
+    }
+    
+    return constraintGroups;
   }
 
   static async findById(constraintId: string, userId: string): Promise<ConstraintGroup | null> {
@@ -151,6 +175,141 @@ export class ConstraintGroupModel {
     
     await pool.query(query, [isActive, constraintId, userId]);
     return await this.findById(constraintId, userId);
+  }
+
+  static async updateStockConstraint(
+    constraintId: string, 
+    userId: string, 
+    stockSymbol: string, 
+    constraints: {
+      buyTriggerPercent?: number;
+      sellTriggerPercent?: number;
+      profitTriggerPercent?: number;
+      buyAmount?: number;
+      sellAmount?: number;
+    }
+  ): Promise<boolean> {
+    // First verify the constraint group belongs to the user
+    const groupExists = await pool.query(
+      'SELECT id FROM constraint_groups WHERE id = $1 AND user_id = $2',
+      [constraintId, userId]
+    );
+    
+    if (groupExists.rows.length === 0) {
+      throw new Error('Constraint group not found');
+    }
+    
+    // Upsert the stock override
+    const query = `
+      INSERT INTO constraint_stock_overrides (
+        constraint_group_id, stock_symbol, buy_trigger_percent, 
+        sell_trigger_percent, profit_trigger_percent, buy_amount, sell_amount
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (constraint_group_id, stock_symbol)
+      DO UPDATE SET
+        buy_trigger_percent = EXCLUDED.buy_trigger_percent,
+        sell_trigger_percent = EXCLUDED.sell_trigger_percent,
+        profit_trigger_percent = EXCLUDED.profit_trigger_percent,
+        buy_amount = EXCLUDED.buy_amount,
+        sell_amount = EXCLUDED.sell_amount,
+        updated_at = CURRENT_TIMESTAMP
+    `;
+    
+    await pool.query(query, [
+      constraintId,
+      stockSymbol.toUpperCase(),
+      constraints.buyTriggerPercent,
+      constraints.sellTriggerPercent,
+      constraints.profitTriggerPercent,
+      constraints.buyAmount,
+      constraints.sellAmount
+    ]);
+    
+    return true;
+  }
+
+  static async removeStockConstraint(constraintId: string, userId: string, stockSymbol: string): Promise<boolean> {
+    // First verify the constraint group belongs to the user
+    const groupExists = await pool.query(
+      'SELECT id FROM constraint_groups WHERE id = $1 AND user_id = $2',
+      [constraintId, userId]
+    );
+    
+    if (groupExists.rows.length === 0) {
+      throw new Error('Constraint group not found');
+    }
+    
+    const query = `
+      DELETE FROM constraint_stock_overrides 
+      WHERE constraint_group_id = $1 AND stock_symbol = $2
+    `;
+    
+    const result = await pool.query(query, [constraintId, stockSymbol.toUpperCase()]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  static async addStockToGroup(constraintId: string, userId: string, stockSymbol: string): Promise<boolean> {
+    // First verify the constraint group belongs to the user
+    const groupExists = await pool.query(
+      'SELECT id FROM constraint_groups WHERE id = $1 AND user_id = $2',
+      [constraintId, userId]
+    );
+    
+    if (groupExists.rows.length === 0) {
+      throw new Error('Constraint group not found');
+    }
+
+    const upperStockSymbol = stockSymbol.toUpperCase();
+    
+    // Check if stock is already in the group
+    const existingStock = await pool.query(
+      'SELECT id FROM constraint_stocks WHERE constraint_group_id = $1 AND stock_symbol = $2',
+      [constraintId, upperStockSymbol]
+    );
+    
+    if (existingStock.rows.length > 0) {
+      throw new Error('Stock is already in this group');
+    }
+
+    // Add the stock to the constraint_stocks table
+    const query = `
+      INSERT INTO constraint_stocks (constraint_group_id, stock_symbol)
+      VALUES ($1, $2)
+    `;
+    
+    await pool.query(query, [constraintId, upperStockSymbol]);
+    return true;
+  }
+
+  static async removeStockFromGroup(constraintId: string, userId: string, stockSymbol: string): Promise<boolean> {
+    // First verify the constraint group belongs to the user
+    const groupExists = await pool.query(
+      'SELECT id FROM constraint_groups WHERE id = $1 AND user_id = $2',
+      [constraintId, userId]
+    );
+    
+    if (groupExists.rows.length === 0) {
+      throw new Error('Constraint group not found');
+    }
+
+    const upperStockSymbol = stockSymbol.toUpperCase();
+    
+    // Remove the stock from the constraint_stocks table
+    const query = `
+      DELETE FROM constraint_stocks 
+      WHERE constraint_group_id = $1 AND stock_symbol = $2
+    `;
+    
+    const result = await pool.query(query, [constraintId, upperStockSymbol]);
+
+    // Also remove any stock-specific overrides for this stock
+    await pool.query(
+      'DELETE FROM constraint_stock_overrides WHERE constraint_group_id = $1 AND stock_symbol = $2',
+      [constraintId, upperStockSymbol]
+    );
+    
+    return (result.rowCount ?? 0) > 0;
   }
 
   static async delete(constraintId: string, userId: string): Promise<boolean> {

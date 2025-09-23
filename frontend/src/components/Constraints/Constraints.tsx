@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Power, PowerOff, TrendingUp, TrendingDown, Target, Users, Tag, ChevronDown, ChevronRight, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Power, PowerOff, TrendingUp, TrendingDown, Target, Users, Tag, ChevronDown, ChevronRight, Save, X, UserPlus, UserMinus } from 'lucide-react';
 import { constraintsService } from '../../services/constraints';
 import { constraintGroupsService } from '../../services/constraintGroups';
 import { stockGroupsService } from '../../services/stockGroups';
 import { TradingConstraint, ConstraintGroup, StockGroup, CreateConstraintGroupRequest } from '../../types';
 import CreateConstraintModal from './CreateConstraintModal';
+import CreateStockGroupModal from './CreateStockGroupModal';
 import StockGroupManager from './StockGroupManager';
 import LegacyStocks from './LegacyStocks';
+import StockSearchInput from '../Common/StockSearchInput';
+import { getStockInfo } from '../../data/stockDatabase';
 import toast from 'react-hot-toast';
 
 const Constraints: React.FC = () => {
@@ -16,10 +19,14 @@ const Constraints: React.FC = () => {
   const [stockGroups, setStockGroups] = useState<StockGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateStockGroupModal, setShowCreateStockGroupModal] = useState(false);
   const [viewMode, setViewMode] = useState<'individual' | 'groups' | 'stock-groups'>('groups');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editingStock, setEditingStock] = useState<string | null>(null);
+  const [editingIndividual, setEditingIndividual] = useState<string | null>(null);
+  const [addingStockToGroup, setAddingStockToGroup] = useState<string | null>(null);
+  const [newStockSymbol, setNewStockSymbol] = useState('');
   const [editValues, setEditValues] = useState<{
     buyTriggerPercent: number;
     sellTriggerPercent: number;
@@ -89,6 +96,11 @@ const Constraints: React.FC = () => {
     await loadData();
   };
 
+  const handleCreateStockGroup = async (stockGroupData: any) => {
+    await stockGroupsService.createStockGroup(stockGroupData);
+    await loadData();
+  };
+
   const handleToggleConstraintGroup = async (id: string, isActive: boolean) => {
     try {
       await constraintGroupsService.toggleConstraintGroup(id, !isActive);
@@ -138,16 +150,7 @@ const Constraints: React.FC = () => {
     });
   };
 
-  const handleEditStock = (groupId: string, stock: string, group: ConstraintGroup) => {
-    setEditingStock(`${groupId}-${stock}`);
-    setEditValues({
-      buyTriggerPercent: group.buyTriggerPercent,
-      sellTriggerPercent: group.sellTriggerPercent,
-      profitTriggerPercent: group.profitTriggerPercent,
-      buyAmount: group.buyAmount,
-      sellAmount: group.sellAmount
-    });
-  };
+
 
   const handleSaveEdit = async () => {
     try {
@@ -157,12 +160,25 @@ const Constraints: React.FC = () => {
         setEditingGroup(null);
         await loadData();
       } else if (editingStock) {
-        // For individual stock editing, we would need to create individual constraints
-        // For now, we'll update the group (this could be enhanced to create individual overrides)
-        const [groupId] = editingStock.split('-');
-        await constraintGroupsService.updateConstraintGroup(groupId, editValues);
-        toast.success('Stock constraint updated successfully!');
+        // For individual stock editing, update the stock's individual constraints within the group
+        const [groupId, stockSymbol] = editingStock.split('-');
+
+        await constraintGroupsService.updateStockConstraint(groupId, stockSymbol, {
+          buyTriggerPercent: editValues.buyTriggerPercent,
+          sellTriggerPercent: editValues.sellTriggerPercent,
+          profitTriggerPercent: editValues.profitTriggerPercent,
+          buyAmount: editValues.buyAmount,
+          sellAmount: editValues.sellAmount
+        });
+
+        toast.success(`${stockSymbol} constraints updated successfully!`);
         setEditingStock(null);
+        await loadData();
+      } else if (editingIndividual) {
+        // For individual constraint editing
+        await constraintsService.updateConstraint(editingIndividual, editValues);
+        toast.success('Individual constraint updated successfully!');
+        setEditingIndividual(null);
         await loadData();
       }
     } catch (error) {
@@ -173,11 +189,68 @@ const Constraints: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingGroup(null);
     setEditingStock(null);
+    setEditingIndividual(null);
+    setAddingStockToGroup(null);
+    setNewStockSymbol('');
     setEditValues({
       buyTriggerPercent: 0,
       sellTriggerPercent: 0,
       buyAmount: 0,
       sellAmount: 0
+    });
+  };
+
+  const handleAddStockToGroup = async (groupId: string, stockSymbol: string) => {
+    if (!stockSymbol.trim()) {
+      toast.error('Please select a stock symbol');
+      return;
+    }
+    
+    try {
+      await constraintGroupsService.addStockToGroup(groupId, stockSymbol.trim());
+      toast.success(`${stockSymbol} added to group successfully!`);
+      setAddingStockToGroup(null);
+      setNewStockSymbol('');
+      await loadData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add stock to group');
+    }
+  };
+
+  const handleRemoveStockFromGroup = async (groupId: string, stockSymbol: string) => {
+    if (window.confirm(`Are you sure you want to remove ${stockSymbol} from this group?`)) {
+      try {
+        await constraintGroupsService.removeStockFromGroup(groupId, stockSymbol);
+        toast.success(`${stockSymbol} removed from group successfully!`);
+        await loadData();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to remove stock from group');
+      }
+    }
+  };
+
+  const handleEditStock = (groupId: string, stock: string, group: ConstraintGroup) => {
+    setEditingStock(`${groupId}-${stock}`);
+
+    // Check if this stock has individual overrides, otherwise use group defaults
+    const stockOverride = group.stockOverrides?.[stock];
+    setEditValues({
+      buyTriggerPercent: stockOverride?.buyTriggerPercent ?? group.buyTriggerPercent,
+      sellTriggerPercent: stockOverride?.sellTriggerPercent ?? group.sellTriggerPercent,
+      profitTriggerPercent: stockOverride?.profitTriggerPercent ?? group.profitTriggerPercent,
+      buyAmount: stockOverride?.buyAmount ?? group.buyAmount,
+      sellAmount: stockOverride?.sellAmount ?? group.sellAmount
+    });
+  };
+
+  const handleEditIndividual = (constraint: any) => {
+    setEditingIndividual(constraint.id);
+    setEditValues({
+      buyTriggerPercent: constraint.buyTriggerPercent,
+      sellTriggerPercent: constraint.sellTriggerPercent,
+      profitTriggerPercent: constraint.profitTriggerPercent,
+      buyAmount: constraint.buyAmount,
+      sellAmount: constraint.sellAmount
     });
   };
 
@@ -196,7 +269,7 @@ const Constraints: React.FC = () => {
     return (
       <div className="p-8">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
         </div>
       </div>
     );
@@ -206,18 +279,18 @@ const Constraints: React.FC = () => {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Trading Constraints</h1>
-          <p className="text-gray-600 mt-1">Manage your automated trading rules and triggers</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Trading Constraints</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-1">Manage your automated trading rules and triggers</p>
         </div>
         <div className="flex items-center gap-3">
           {/* View Mode Toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               onClick={() => setViewMode('groups')}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                 viewMode === 'groups'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <Users className="h-4 w-4 inline mr-1" />
@@ -227,8 +300,8 @@ const Constraints: React.FC = () => {
               onClick={() => setViewMode('stock-groups')}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                 viewMode === 'stock-groups'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <Tag className="h-4 w-4 inline mr-1" />
@@ -238,8 +311,8 @@ const Constraints: React.FC = () => {
               onClick={() => setViewMode('individual')}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                 viewMode === 'individual'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <Target className="h-4 w-4 inline mr-1" />
@@ -247,31 +320,49 @@ const Constraints: React.FC = () => {
             </button>
           </div>
 
-          {/* Create Button */}
-          {viewMode !== 'stock-groups' && (
+          {/* Create Buttons */}
+          {viewMode === 'groups' && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
             >
               <Plus className="h-4 w-4 mr-2" />
               New Constraint Group
             </button>
+          )}
+          {viewMode === 'stock-groups' && (
+            <button
+              onClick={() => setShowCreateStockGroupModal(true)}
+              className="inline-flex items-center px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Stock Group
+            </button>
+          )}
+          {viewMode === 'individual' && (
+            <Link
+              to="/constraints/create"
+              className="inline-flex items-center px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Individual Constraint
+            </Link>
           )}
         </div>
       </div>
 
       {viewMode === 'groups' && constraintGroups.length === 0 && constraints.length === 0 ? (
         <div className="card text-center py-12">
-          <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <Users className="h-6 w-6 text-gray-400" />
+          <div className="mx-auto w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+            <Users className="h-6 w-6 text-gray-400 dark:text-gray-500" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No constraint groups yet</h3>
-          <p className="text-gray-600 mb-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No constraint groups yet</h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
             Create your first constraint group to apply trading rules to multiple stocks at once.
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Constraint Group
@@ -285,78 +376,163 @@ const Constraints: React.FC = () => {
           
           {viewMode === 'individual' && constraints.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Individual Constraints</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Your Individual Constraints</h3>
               <div className="grid gap-4">
                 {constraints.map((constraint) => (
             <div key={constraint.id} className="card">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {constraint.stockSymbol}
                     </h3>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       constraint.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                     }`}>
                       {constraint.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    {/* Buy Trigger */}
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-red-100 rounded-lg">
-                        <TrendingDown className="h-4 w-4 text-red-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Buy Trigger</p>
-                        <p className="font-medium text-gray-900">
-                          {formatPercent(constraint.buyTriggerPercent)} drop
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Amount: {formatCurrency(constraint.buyAmount)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Sell Trigger */}
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Sell Trigger</p>
-                        <p className="font-medium text-gray-900">
-                          {formatPercent(constraint.sellTriggerPercent)} rise
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Amount: {formatCurrency(constraint.sellAmount)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Profit Trigger */}
-                    {constraint.profitTriggerPercent && (
+                  {editingIndividual === constraint.id ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      {/* Editable Buy Trigger */}
                       <div className="flex items-center gap-2">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <Target className="h-4 w-4 text-blue-600" />
+                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                          <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Buy Trigger</p>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={editValues.buyTriggerPercent}
+                              onChange={(e) => setEditValues(prev => ({ ...prev, buyTriggerPercent: parseFloat(e.target.value) }))}
+                              className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                              step="0.1"
+                            />
+                            <span className="text-sm text-gray-900 dark:text-white">%</span>
+                          </div>
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
+                            <input
+                              type="number"
+                              value={editValues.buyAmount}
+                              onChange={(e) => setEditValues(prev => ({ ...prev, buyAmount: parseFloat(e.target.value) }))}
+                              className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                              step="100"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Editable Sell Trigger */}
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                          <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Sell Trigger</p>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={editValues.sellTriggerPercent}
+                              onChange={(e) => setEditValues(prev => ({ ...prev, sellTriggerPercent: parseFloat(e.target.value) }))}
+                              className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                              step="0.1"
+                            />
+                            <span className="text-sm text-gray-900 dark:text-white">%</span>
+                          </div>
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
+                            <input
+                              type="number"
+                              value={editValues.sellAmount}
+                              onChange={(e) => setEditValues(prev => ({ ...prev, sellAmount: parseFloat(e.target.value) }))}
+                              className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                              step="100"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Editable Profit Target */}
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                          <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Profit Target</p>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={editValues.profitTriggerPercent || ''}
+                              onChange={(e) => setEditValues(prev => ({ ...prev, profitTriggerPercent: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                              className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                              step="0.1"
+                              placeholder="15"
+                            />
+                            <span className="text-sm text-gray-900 dark:text-white">%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      {/* Buy Trigger */}
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                          <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Profit Target</p>
-                          <p className="font-medium text-gray-900">
-                            {formatPercent(constraint.profitTriggerPercent)}
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Buy Trigger</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {formatPercent(constraint.buyTriggerPercent)} drop
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Amount: {formatCurrency(constraint.buyAmount)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Sell Trigger */}
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                          <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Sell Trigger</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {formatPercent(constraint.sellTriggerPercent)} rise
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
                             Amount: {formatCurrency(constraint.sellAmount)}
                           </p>
                         </div>
                       </div>
-                    )}
-                  </div>
 
-                  <div className="text-sm text-gray-500">
+                      {/* Profit Trigger */}
+                      {constraint.profitTriggerPercent && (
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                            <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Profit Target</p>
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {formatPercent(constraint.profitTriggerPercent)}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                              Amount: {formatCurrency(constraint.sellAmount)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
                     Created: {new Date(constraint.createdAt).toLocaleDateString()}
                     {constraint.updatedAt !== constraint.createdAt && (
                       <span className="ml-4">
@@ -367,37 +543,56 @@ const Constraints: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 ml-4">
-                  <button
-                    onClick={() => handleToggleActive(constraint.id, constraint.isActive)}
-                    className={`p-2 rounded-lg transition-colors ${
-                      constraint.isActive
-                        ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    title={constraint.isActive ? 'Deactivate' : 'Activate'}
-                  >
-                    {constraint.isActive ? (
-                      <Power className="h-4 w-4" />
-                    ) : (
-                      <PowerOff className="h-4 w-4" />
-                    )}
-                  </button>
-
-                  <Link
-                    to={`/constraints/edit/${constraint.id}`}
-                    className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
-                    title="Edit"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Link>
-
-                  <button
-                    onClick={() => handleDelete(constraint.id, constraint.stockSymbol)}
-                    className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {editingIndividual === constraint.id ? (
+                    <>
+                      <button
+                        onClick={handleSaveEdit}
+                        className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                        title="Save changes"
+                      >
+                        <Save className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        title="Cancel editing"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleEditIndividual(constraint)}
+                        className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                        title="Edit constraint"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(constraint.id, constraint.isActive)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          constraint.isActive
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50'
+                            : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                        }`}
+                        title={constraint.isActive ? 'Deactivate' : 'Activate'}
+                      >
+                        {constraint.isActive ? (
+                          <PowerOff className="h-4 w-4" />
+                        ) : (
+                          <Power className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(constraint.id, constraint.stockSymbol)}
+                        className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
                   </div>
@@ -413,28 +608,28 @@ const Constraints: React.FC = () => {
                   <div className="flex items-center gap-3 mb-3">
                     <button
                       onClick={() => toggleGroupExpansion(constraintGroup.id)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                     >
                       {expandedGroups.has(constraintGroup.id) ? (
-                        <ChevronDown className="h-4 w-4 text-gray-600" />
+                        <ChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                       ) : (
-                        <ChevronRight className="h-4 w-4 text-gray-600" />
+                        <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                       )}
                     </button>
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {constraintGroup.name}
                     </h3>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       constraintGroup.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                     }`}>
                       {constraintGroup.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
 
                   {constraintGroup.description && (
-                    <p className="text-gray-600 mb-3">{constraintGroup.description}</p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-3">{constraintGroup.description}</p>
                   )}
 
                   {/* Group-level constraints with edit functionality */}
@@ -443,28 +638,28 @@ const Constraints: React.FC = () => {
                       <>
                         {/* Editable Buy Trigger */}
                         <div className="flex items-center gap-2">
-                          <div className="p-2 bg-red-100 rounded-lg">
-                            <TrendingDown className="h-4 w-4 text-red-600" />
+                          <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                            <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm text-gray-600">Buy Trigger</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Buy Trigger</p>
                             <div className="flex items-center gap-1">
                               <input
                                 type="number"
                                 value={editValues.buyTriggerPercent}
                                 onChange={(e) => setEditValues(prev => ({ ...prev, buyTriggerPercent: parseFloat(e.target.value) }))}
-                                className="w-16 px-1 py-0.5 text-sm border rounded"
+                                className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                 step="0.1"
                               />
-                              <span className="text-sm">%</span>
+                              <span className="text-sm text-gray-900 dark:text-white">%</span>
                             </div>
                             <div className="flex items-center gap-1 mt-1">
-                              <span className="text-xs text-gray-500">$</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
                               <input
                                 type="number"
                                 value={editValues.buyAmount}
                                 onChange={(e) => setEditValues(prev => ({ ...prev, buyAmount: parseFloat(e.target.value) }))}
-                                className="w-20 px-1 py-0.5 text-xs border rounded"
+                                className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                 step="100"
                               />
                             </div>
@@ -473,28 +668,28 @@ const Constraints: React.FC = () => {
 
                         {/* Editable Sell Trigger */}
                         <div className="flex items-center gap-2">
-                          <div className="p-2 bg-green-100 rounded-lg">
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm text-gray-600">Sell Trigger</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Sell Trigger</p>
                             <div className="flex items-center gap-1">
                               <input
                                 type="number"
                                 value={editValues.sellTriggerPercent}
                                 onChange={(e) => setEditValues(prev => ({ ...prev, sellTriggerPercent: parseFloat(e.target.value) }))}
-                                className="w-16 px-1 py-0.5 text-sm border rounded"
+                                className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                 step="0.1"
                               />
-                              <span className="text-sm">%</span>
+                              <span className="text-sm text-gray-900 dark:text-white">%</span>
                             </div>
                             <div className="flex items-center gap-1 mt-1">
-                              <span className="text-xs text-gray-500">$</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
                               <input
                                 type="number"
                                 value={editValues.sellAmount}
                                 onChange={(e) => setEditValues(prev => ({ ...prev, sellAmount: parseFloat(e.target.value) }))}
-                                className="w-20 px-1 py-0.5 text-xs border rounded"
+                                className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                 step="100"
                               />
                             </div>
@@ -503,21 +698,21 @@ const Constraints: React.FC = () => {
 
                         {/* Editable Profit Target */}
                         <div className="flex items-center gap-2">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <Target className="h-4 w-4 text-blue-600" />
+                          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                            <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm text-gray-600">Profit Target</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Profit Target</p>
                             <div className="flex items-center gap-1">
                               <input
                                 type="number"
                                 value={editValues.profitTriggerPercent || ''}
                                 onChange={(e) => setEditValues(prev => ({ ...prev, profitTriggerPercent: e.target.value ? parseFloat(e.target.value) : undefined }))}
-                                className="w-16 px-1 py-0.5 text-sm border rounded"
+                                className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                 step="0.1"
                                 placeholder="15"
                               />
-                              <span className="text-sm">%</span>
+                              <span className="text-sm text-gray-900 dark:text-white">%</span>
                             </div>
                           </div>
                         </div>
@@ -526,30 +721,30 @@ const Constraints: React.FC = () => {
                       <>
                         {/* Display-only triggers */}
                         <div className="flex items-center gap-2">
-                          <div className="p-2 bg-red-100 rounded-lg">
-                            <TrendingDown className="h-4 w-4 text-red-600" />
+                          <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                            <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Buy Trigger</p>
-                            <p className="font-medium text-gray-900">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Buy Trigger</p>
+                            <p className="font-medium text-gray-900 dark:text-white">
                               {formatPercent(constraintGroup.buyTriggerPercent)} drop
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
                               Amount: {formatCurrency(constraintGroup.buyAmount)}
                             </p>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <div className="p-2 bg-green-100 rounded-lg">
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Sell Trigger</p>
-                            <p className="font-medium text-gray-900">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Sell Trigger</p>
+                            <p className="font-medium text-gray-900 dark:text-white">
                               {formatPercent(constraintGroup.sellTriggerPercent)} rise
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
                               Amount: {formatCurrency(constraintGroup.sellAmount)}
                             </p>
                           </div>
@@ -557,15 +752,15 @@ const Constraints: React.FC = () => {
 
                         {constraintGroup.profitTriggerPercent && (
                           <div className="flex items-center gap-2">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                              <Target className="h-4 w-4 text-blue-600" />
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                              <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">Profit Target</p>
-                              <p className="font-medium text-gray-900">
+                              <p className="text-sm text-gray-600 dark:text-gray-300">Profit Target</p>
+                              <p className="font-medium text-gray-900 dark:text-white">
                                 {formatPercent(constraintGroup.profitTriggerPercent)}
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
                                 Amount: {formatCurrency(constraintGroup.sellAmount)}
                               </p>
                             </div>
@@ -577,78 +772,271 @@ const Constraints: React.FC = () => {
 
                   {/* Collapsible Stocks Section */}
                   <div className="mb-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Applies to {constraintGroup.stocks.length + constraintGroup.stockGroups.length} items
                     </p>
                     
                     {expandedGroups.has(constraintGroup.id) && (
-                      <div className="space-y-2">
-                        {/* Individual Stocks */}
-                        {constraintGroup.stocks.map((stock) => (
-                          <div key={stock} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Stocks in this group ({constraintGroup.stocks.length}):
+                          </h4>
+                          <button
+                            onClick={() => setAddingStockToGroup(constraintGroup.id)}
+                            className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                            title="Add stock to group"
+                          >
+                            <UserPlus className="h-3 w-3" />
+                            Add Stock
+                          </button>
+                        </div>
+
+                        {/* Add Stock Form */}
+                        {addingStockToGroup === constraintGroup.id && (
+                          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900">{stock}</span>
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Individual</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {editingStock === `${constraintGroup.id}-${stock}` ? (
-                                <>
-                                  <button
-                                    onClick={handleSaveEdit}
-                                    className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200 transition-colors"
-                                    title="Save changes"
-                                  >
-                                    <Save className="h-3 w-3" />
-                                  </button>
-                                  <button
-                                    onClick={handleCancelEdit}
-                                    className="p-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
-                                    title="Cancel editing"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </>
-                              ) : (
-                                <button
-                                  onClick={() => handleEditStock(constraintGroup.id, stock, constraintGroup)}
-                                  className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors"
-                                  title="Edit stock constraint"
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </button>
-                              )}
+                              <div className="flex-1">
+                                <StockSearchInput
+                                  onStockSelect={(stock) => setNewStockSymbol(stock)}
+                                  placeholder="Search and select stock..."
+                                  className="w-full"
+                                />
+                                <input
+                                  type="text"
+                                  value={newStockSymbol}
+                                  onChange={(e) => setNewStockSymbol(e.target.value.toUpperCase())}
+                                  placeholder="Or type stock symbol (e.g., AAPL)"
+                                  className="w-full mt-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                                />
+                              </div>
+                              <button
+                                onClick={() => handleAddStockToGroup(constraintGroup.id, newStockSymbol)}
+                                disabled={!newStockSymbol.trim()}
+                                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                              >
+                                Add
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setAddingStockToGroup(null);
+                                  setNewStockSymbol('');
+                                }}
+                                className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+                              >
+                                Cancel
+                              </button>
                             </div>
                           </div>
-                        ))}
-                        
-                        {/* Stock Groups */}
-                        {constraintGroup.stockGroups.map((groupId) => {
-                          const group = stockGroups.find(g => g.id === groupId);
-                          return group ? (
-                            <div key={groupId} className="p-2 bg-purple-50 rounded">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-gray-900">{group.name}</span>
-                                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                                    Group ({group.stocks.length})
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {group.stocks.map((stock) => (
-                                  <span key={stock} className="text-xs bg-white text-gray-700 px-2 py-1 rounded border">
-                                    {stock}
-                                  </span>
-                                ))}
-                              </div>
+                        )}
+
+                        {/* Individual Stocks with Detailed Constraints */}
+                        <div className="space-y-3">
+                          {constraintGroup.stocks.length === 0 ? (
+                            <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                              No stocks in this group yet. Click "Add Stock" to add some.
                             </div>
-                          ) : null;
-                        })}
+                          ) : (
+                            constraintGroup.stocks.map((stock) => {
+                              const stockInfo = getStockInfo(stock);
+                              const override = constraintGroup.stockOverrides?.[stock];
+                              const buyTrigger = override?.buyTriggerPercent ?? constraintGroup.buyTriggerPercent;
+                              const sellTrigger = override?.sellTriggerPercent ?? constraintGroup.sellTriggerPercent;
+                              const profitTrigger = override?.profitTriggerPercent ?? constraintGroup.profitTriggerPercent;
+                              const buyAmount = override?.buyAmount ?? constraintGroup.buyAmount;
+                              const sellAmount = override?.sellAmount ?? constraintGroup.sellAmount;
+
+                              return (
+                                <div key={stock} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex flex-col flex-1">
+                                      <div className="flex items-center gap-3 mb-2">
+                                        <span className="font-semibold text-gray-900 dark:text-white text-lg">
+                                          {stock}
+                                        </span>
+                                        {override ? (
+                                          <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-2 py-1 rounded">
+                                            Custom Constraints
+                                          </span>
+                                        ) : (
+                                          <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
+                                            Group Constraints
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {stockInfo && (
+                                        <span className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                                          {stockInfo.name}
+                                        </span>
+                                      )}
+
+                                      {/* Always show trigger values prominently */}
+                                      <div className="flex items-center gap-4 mb-3">
+                                        <div className="flex items-center gap-1">
+                                          <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                          <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                                            Buy: {formatPercent(buyTrigger)}
+                                          </span>
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            ({formatCurrency(buyAmount)})
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                          <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                                            Sell: {formatPercent(sellTrigger)}
+                                          </span>
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            ({formatCurrency(sellAmount)})
+                                          </span>
+                                        </div>
+                                        {profitTrigger && (
+                                          <div className="flex items-center gap-1">
+                                            <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                              Profit: {formatPercent(profitTrigger)}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Detailed Constraint Information when editing */}
+                                      {editingStock === `${constraintGroup.id}-${stock}` && (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                          {/* Editable Buy Trigger */}
+                                          <div className="flex items-center gap-2">
+                                            <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded">
+                                              <TrendingDown className="h-3 w-3 text-red-600 dark:text-red-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className="text-xs text-gray-600 dark:text-gray-400">Buy Trigger</p>
+                                              <div className="flex items-center gap-1">
+                                                <input
+                                                  type="number"
+                                                  value={editValues.buyTriggerPercent}
+                                                  onChange={(e) => setEditValues(prev => ({ ...prev, buyTriggerPercent: parseFloat(e.target.value) }))}
+                                                  className="w-16 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                                                  step="0.1"
+                                                />
+                                                <span className="text-xs text-gray-900 dark:text-white">%</span>
+                                              </div>
+                                              <div className="flex items-center gap-1 mt-1">
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
+                                                <input
+                                                  type="number"
+                                                  value={editValues.buyAmount}
+                                                  onChange={(e) => setEditValues(prev => ({ ...prev, buyAmount: parseFloat(e.target.value) }))}
+                                                  className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                                                  step="100"
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* Editable Sell Trigger */}
+                                          <div className="flex items-center gap-2">
+                                            <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded">
+                                              <TrendingUp className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className="text-xs text-gray-600 dark:text-gray-400">Sell Trigger</p>
+                                              <div className="flex items-center gap-1">
+                                                <input
+                                                  type="number"
+                                                  value={editValues.sellTriggerPercent}
+                                                  onChange={(e) => setEditValues(prev => ({ ...prev, sellTriggerPercent: parseFloat(e.target.value) }))}
+                                                  className="w-16 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                                                  step="0.1"
+                                                />
+                                                <span className="text-xs text-gray-900 dark:text-white">%</span>
+                                              </div>
+                                              <div className="flex items-center gap-1 mt-1">
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
+                                                <input
+                                                  type="number"
+                                                  value={editValues.sellAmount}
+                                                  onChange={(e) => setEditValues(prev => ({ ...prev, sellAmount: parseFloat(e.target.value) }))}
+                                                  className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                                                  step="100"
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* Editable Profit Target */}
+                                          <div className="flex items-center gap-2">
+                                            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded">
+                                              <Target className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className="text-xs text-gray-600 dark:text-gray-400">Profit Target</p>
+                                              <div className="flex items-center gap-1">
+                                                <input
+                                                  type="number"
+                                                  value={editValues.profitTriggerPercent || ''}
+                                                  onChange={(e) => setEditValues(prev => ({ ...prev, profitTriggerPercent: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                                                  className="w-16 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                                                  step="0.1"
+                                                  placeholder="15"
+                                                />
+                                                <span className="text-xs text-gray-900 dark:text-white">%</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="flex items-center gap-1 ml-4">
+                                      {editingStock === `${constraintGroup.id}-${stock}` ? (
+                                        <>
+                                          <button
+                                            onClick={handleSaveEdit}
+                                            className="p-1.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                                            title="Save changes"
+                                          >
+                                            <Save className="h-4 w-4" />
+                                          </button>
+                                          <button
+                                            onClick={handleCancelEdit}
+                                            className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                            title="Cancel editing"
+                                          >
+                                            <X className="h-4 w-4" />
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <button
+                                            onClick={() => handleEditStock(constraintGroup.id, stock, constraintGroup)}
+                                            className="p-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                                            title="Edit individual constraints"
+                                          >
+                                            <Edit className="h-4 w-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleRemoveStockFromGroup(constraintGroup.id, stock)}
+                                            className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                                            title="Remove stock from group"
+                                          >
+                                            <UserMinus className="h-4 w-4" />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
                     )}
+
                   </div>
 
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
                     Created: {new Date(constraintGroup.createdAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -658,14 +1046,14 @@ const Constraints: React.FC = () => {
                     <>
                       <button
                         onClick={handleSaveEdit}
-                        className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+                        className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                         title="Save changes"
                       >
                         <Save className="h-4 w-4" />
                       </button>
                       <button
                         onClick={handleCancelEdit}
-                        className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                        className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                         title="Cancel editing"
                       >
                         <X className="h-4 w-4" />
@@ -675,7 +1063,7 @@ const Constraints: React.FC = () => {
                     <>
                       <button
                         onClick={() => handleEditGroup(constraintGroup)}
-                        className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                        className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                         title="Edit group constraints"
                       >
                         <Edit className="h-4 w-4" />
@@ -685,8 +1073,8 @@ const Constraints: React.FC = () => {
                         onClick={() => handleToggleConstraintGroup(constraintGroup.id, constraintGroup.isActive)}
                         className={`p-2 rounded-lg transition-colors ${
                           constraintGroup.isActive
-                            ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                         title={constraintGroup.isActive ? 'Deactivate' : 'Activate'}
                       >
@@ -701,7 +1089,7 @@ const Constraints: React.FC = () => {
 
                   <button
                     onClick={() => handleDeleteConstraintGroup(constraintGroup.id, constraintGroup.name)}
-                    className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                    className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -724,6 +1112,13 @@ const Constraints: React.FC = () => {
         onSubmit={handleCreateConstraintGroup}
         stockGroups={stockGroups}
         onStockGroupsUpdate={loadData}
+      />
+
+      {/* Create Stock Group Modal */}
+      <CreateStockGroupModal
+        isOpen={showCreateStockGroupModal}
+        onClose={() => setShowCreateStockGroupModal(false)}
+        onSubmit={handleCreateStockGroup}
       />
     </div>
   );

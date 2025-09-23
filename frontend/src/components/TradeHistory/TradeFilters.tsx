@@ -48,14 +48,14 @@ const TradeFilters: React.FC<TradeFiltersProps> = ({ filters, onFiltersChange })
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Date Range */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             <Calendar className="h-4 w-4 inline mr-1" />
             Date Range
           </label>
           <select
             value={filters.dateRange}
             onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           >
             <option value="all">All Time</option>
             <option value="7d">Last 7 days</option>
@@ -67,11 +67,11 @@ const TradeFilters: React.FC<TradeFiltersProps> = ({ filters, onFiltersChange })
 
         {/* Trade Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Trade Type</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Trade Type</label>
           <select
             value={filters.tradeType}
             onChange={(e) => handleFilterChange('tradeType', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           >
             <option value="all">All Types</option>
             <option value="BUY">Buy Orders</option>
@@ -81,11 +81,11 @@ const TradeFilters: React.FC<TradeFiltersProps> = ({ filters, onFiltersChange })
 
         {/* Trigger Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Trigger Type</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Trigger Type</label>
           <select
             value={filters.triggerType}
             onChange={(e) => handleFilterChange('triggerType', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           >
             <option value="all">All Triggers</option>
             <option value="PRICE_DROP">Price Drop</option>
@@ -96,19 +96,19 @@ const TradeFilters: React.FC<TradeFiltersProps> = ({ filters, onFiltersChange })
 
         {/* Stock Symbol */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Stock Symbol</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock Symbol</label>
           <input
             type="text"
             value={filters.stockSymbol}
             onChange={(e) => handleFilterChange('stockSymbol', e.target.value)}
             placeholder="e.g., AAPL"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
         </div>
 
         {/* Min Amount */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             <DollarSign className="h-4 w-4 inline mr-1" />
             Min Amount
           </label>
@@ -119,13 +119,13 @@ const TradeFilters: React.FC<TradeFiltersProps> = ({ filters, onFiltersChange })
             placeholder="0"
             min="0"
             step="100"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
         </div>
 
         {/* Max Amount */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             <DollarSign className="h-4 w-4 inline mr-1" />
             Max Amount
           </label>
@@ -136,7 +136,7 @@ const TradeFilters: React.FC<TradeFiltersProps> = ({ filters, onFiltersChange })
             placeholder="No limit"
             min="0"
             step="100"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
         </div>
       </div>

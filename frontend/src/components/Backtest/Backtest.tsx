@@ -32,7 +32,16 @@ const Backtest: React.FC = () => {
   };
 
   const handleRunBacktest = async (params: {
-    constraintId: string;
+    constraintId?: string;
+    constraintType: 'group' | 'individual' | 'custom';
+    customConstraint?: {
+      stocks: string[];
+      buyTriggerPercent: number;
+      sellTriggerPercent: number;
+      profitTriggerPercent?: number;
+      buyAmount: number;
+      sellAmount: number;
+    };
     startDate: string;
     endDate: string;
     initialCapital: number;
@@ -45,7 +54,7 @@ const Backtest: React.FC = () => {
       
       // Mock backtest results
       const mockResult: BacktestResult = {
-        constraintId: params.constraintId,
+        constraintId: params.constraintId || 'custom',
         startDate: params.startDate,
         endDate: params.endDate,
         totalTrades: Math.floor(Math.random() * 50) + 10,
@@ -71,8 +80,8 @@ const Backtest: React.FC = () => {
     return (
       <div className="p-8">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
+          <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
         </div>
       </div>
     );
@@ -82,20 +91,20 @@ const Backtest: React.FC = () => {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Backtest</h1>
-          <p className="text-gray-600 mt-2">Test your trading strategies against historical data</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Backtest</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Test your trading strategies against historical data</p>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200 mb-8">
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-8">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('new')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'new'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -108,8 +117,8 @@ const Backtest: React.FC = () => {
             disabled={!currentResults}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'results' && currentResults
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 disabled:text-gray-300'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 disabled:text-gray-300 dark:disabled:text-gray-600'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -121,8 +130,8 @@ const Backtest: React.FC = () => {
             onClick={() => setActiveTab('history')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'history'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -137,12 +146,12 @@ const Backtest: React.FC = () => {
       {activeTab === 'new' && (
         <div>
           {/* Info Banner */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-8">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
               <div>
-                <h3 className="text-sm font-medium text-blue-800">About Backtesting</h3>
-                <p className="text-sm text-blue-700 mt-1">
+                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">About Backtesting</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                   Backtesting simulates how your trading constraints would have performed using historical market data. 
                   This helps you evaluate strategy effectiveness before risking real capital.
                 </p>
@@ -169,11 +178,11 @@ const Backtest: React.FC = () => {
       {/* Running Backtest Overlay */}
       {backtesting && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Running Backtest</h3>
-              <p className="text-gray-600">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Running Backtest</h3>
+              <p className="text-gray-600 dark:text-gray-300">
                 Analyzing historical data and simulating trades. This may take a few moments...
               </p>
             </div>

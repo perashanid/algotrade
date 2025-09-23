@@ -11,6 +11,7 @@
     "test:watch": "jest --watch",
     "migrate": "ts-node src/scripts/migrate.ts",
     "migrate:v2": "ts-node src/scripts/migrateV2.ts",
+    "migrate:v3": "ts-node src/scripts/migrateV3.ts",
     "seed:demo": "ts-node src/scripts/seedDemo.ts",
     "seed:stock-groups": "ts-node src/scripts/seedStockGroups.ts",
     "setup": "ts-node src/scripts/setup.ts",
