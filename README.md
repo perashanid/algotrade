@@ -16,6 +16,8 @@ npm run dev
 3. Set environment variables in Vercel dashboard
 4. Deploy
 
+**Note**: CORS is handled automatically - no additional configuration needed!
+
 ## Environment Variables
 
 Set these in your Vercel dashboard:
