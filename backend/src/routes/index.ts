@@ -9,7 +9,9 @@ import analyticsRoutes from './analytics';
 import backtestRoutes from './backtest';
 import tradeRoutes from './trades';
 import systemRoutes from './system';
+import optimizedConstraintRoutes from './optimizedConstraints';
 import { apiLimiter, authLimiter, marketDataLimiter } from '../middleware/rateLimiter';
+import { getPerformanceMetrics } from '../middleware/performanceMonitor';
 
 const router = Router();
 
@@ -29,6 +31,7 @@ router.use('/analytics', analyticsRoutes);
 router.use('/backtest', backtestRoutes);
 router.use('/trades', tradeRoutes);
 router.use('/system', systemRoutes);
+router.use('/optimized-constraints', optimizedConstraintRoutes);
 
 // Health check endpoint
 router.get('/health', (_req, res) => {
@@ -43,5 +46,8 @@ router.get('/health', (_req, res) => {
     timestamp: new Date()
   });
 });
+
+// Performance metrics endpoint
+router.get('/performance', getPerformanceMetrics);
 
 export default router;

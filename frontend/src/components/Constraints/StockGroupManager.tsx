@@ -118,13 +118,7 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">Stock Groups</h3>
           <p className="text-gray-600 dark:text-gray-300 text-sm">Create custom groups of stocks for easier constraint management</p>
         </div>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="inline-flex items-center px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-sm"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          New Group
-        </button>
+
       </div>
 
       {/* Create/Edit Form */}

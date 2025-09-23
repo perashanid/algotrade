@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { ConstraintService } from '../services/ConstraintService';
+import { OptimizedConstraintPositionService } from '../services/OptimizedConstraintPositionService';
 // import { CreateConstraintRequest, UpdateConstraintRequest, APIResponse, TradingConstraint } from '../types';
 
 export class ConstraintController {
@@ -11,6 +12,9 @@ export class ConstraintController {
     try {
       const userId = req.user!.id;
       const constraint = await ConstraintService.createConstraint(userId, req.body);
+
+      // Invalidate constraint position cache
+      await OptimizedConstraintPositionService.invalidateConstraintPositions(userId);
 
       res.status(201).json({
         success: true,
@@ -125,6 +129,9 @@ export class ConstraintController {
         return;
       }
 
+      // Invalidate constraint position cache
+      await OptimizedConstraintPositionService.invalidateConstraintPositions(userId);
+
       res.json({
         success: true,
         data: constraint,
@@ -175,6 +182,9 @@ export class ConstraintController {
         return;
       }
 
+      // Invalidate constraint position cache
+      await OptimizedConstraintPositionService.invalidateConstraintPositions(userId);
+
       res.json({
         success: true,
         data: { message: 'Constraint deleted successfully' },
@@ -212,6 +222,9 @@ export class ConstraintController {
         });
         return;
       }
+
+      // Invalidate constraint position cache
+      await OptimizedConstraintPositionService.invalidateConstraintPositions(userId);
 
       res.json({
         success: true,

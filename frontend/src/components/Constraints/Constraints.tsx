@@ -363,15 +363,8 @@ const Constraints: React.FC = () => {
           </div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No constraint groups yet</h3>
           <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Create your first constraint group to apply trading rules to multiple stocks at once.
+            Create your first constraint group to apply trading rules to multiple stocks at once. Use the "New Constraint Group" button above to get started.
           </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Constraint Group
-          </button>
         </div>
       ) : (
         <div className="grid gap-6">
