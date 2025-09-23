@@ -234,3 +234,49 @@ export interface RegisterRequest {
   email: string;
   password: string;
 }
+
+// Enhanced interfaces for group stock display and management
+
+export interface StockTriggers {
+  buyTriggerPercent: number;
+  sellTriggerPercent: number;
+  profitTriggerPercent?: number;
+  buyAmount: number;
+  sellAmount: number;
+}
+
+export interface StockDisplayData {
+  symbol: string;
+  position?: Position;
+  currentPrice: number;
+  triggers: StockTriggers;
+  isCustomTriggers: boolean; // true if different from group defaults
+  status: 'watching' | 'position' | 'triggered';
+  marketValue: number;
+  unrealizedPnl: number;
+  unrealizedPnlPercent: number;
+}
+
+export interface GroupDisplayData {
+  group: ConstraintGroup;
+  stocks: StockDisplayData[];
+  isExpanded: boolean;
+  totalValue: number;
+  activePositions: number;
+}
+
+export interface StockEditState {
+  groupId: string;
+  stockSymbol: string;
+  isEditing: boolean;
+  editValues: StockTriggers;
+  isCustom: boolean; // whether this stock has custom triggers
+}
+
+export interface GroupUIState {
+  expandedGroups: Set<string>;
+  editingGroup: string | null;
+  editingStock: string | null; // format: "groupId-stockSymbol"
+  addingStockToGroup: string | null;
+  editValues: StockTriggers;
+}
