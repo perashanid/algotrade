@@ -387,29 +387,48 @@ const ConstraintPositionList: React.FC = () => {
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <button
-                    onClick={() => toggleGroupExpansion(groupData.group.id)}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                  >
-                    {uiState.expandedGroups.has(groupData.group.id) ? (
-                      <ChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                    )}
-                  </button>
+                  {/* Only show dropdown button if there are multiple stocks */}
+                  {groupData.stocks.length > 1 && (
+                    <button
+                      onClick={() => toggleGroupExpansion(groupData.group.id)}
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                    >
+                      {uiState.expandedGroups.has(groupData.group.id) ? (
+                        <ChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                      )}
+                    </button>
+                  )}
+                  
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{groupData.group.name}</h3>
+                  
+                  {/* For single stock, show the stock name directly */}
+                  {groupData.stocks.length === 1 && (
+                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                      {groupData.stocks[0].symbol}
+                    </span>
+                  )}
+                  
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${groupData.group.isActive
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                     }`}>
                     {groupData.group.isActive ? 'Active' : 'Inactive'}
                   </span>
-                  <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full">
-                    {groupData.stocks.length} stocks
-                  </span>
-                  <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">
-                    {groupData.activePositions} positions
-                  </span>
+                  
+                  {/* Only show stock count badge for multiple stocks */}
+                  {groupData.stocks.length > 1 && (
+                    <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full">
+                      {groupData.stocks.length} stocks
+                    </span>
+                  )}
+                  
+                  {groupData.activePositions > 0 && (
+                    <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">
+                      {groupData.activePositions} positions
+                    </span>
+                  )}
                 </div>
 
                 {/* Group Constraints Summary */}
@@ -592,22 +611,39 @@ const ConstraintPositionList: React.FC = () => {
               </div>
             </div>
 
-            {/* Expanded Stocks Section */}
-            {uiState.expandedGroups.has(groupData.group.id) && (
+            {/* Stocks Section - Always show for single stock, expandable for multiple */}
+            {(groupData.stocks.length === 1 || uiState.expandedGroups.has(groupData.group.id)) && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Stocks in this group ({groupData.stocks.length}):
-                  </h4>
-                  <button
-                    onClick={() => setUIState(prev => ({ ...prev, addingStockToGroup: groupData.group.id }))}
-                    className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                    title="Add stock to group"
-                  >
-                    <UserPlus className="h-3 w-3" />
-                    Add Stock
-                  </button>
-                </div>
+                {/* Only show header and add button for multiple stocks */}
+                {groupData.stocks.length > 1 && (
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Stocks in this group ({groupData.stocks.length}):
+                    </h4>
+                    <button
+                      onClick={() => setUIState(prev => ({ ...prev, addingStockToGroup: groupData.group.id }))}
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                      title="Add stock to group"
+                    >
+                      <UserPlus className="h-3 w-3" />
+                      Add Stock
+                    </button>
+                  </div>
+                )}
+
+                {/* Add Stock Button for single stock groups */}
+                {groupData.stocks.length === 1 && (
+                  <div className="flex justify-end mb-3">
+                    <button
+                      onClick={() => setUIState(prev => ({ ...prev, addingStockToGroup: groupData.group.id }))}
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                      title="Add another stock to group"
+                    >
+                      <UserPlus className="h-3 w-3" />
+                      Add Stock
+                    </button>
+                  </div>
+                )}
 
                 {/* Add Stock Form */}
                 {uiState.addingStockToGroup === groupData.group.id && (

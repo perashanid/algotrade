@@ -611,19 +611,31 @@ const Constraints: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <button
-                      onClick={() => toggleGroupExpansion(constraintGroup.id)}
-                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                    >
-                      {expandedGroups.has(constraintGroup.id) ? (
-                        <ChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                      )}
-                    </button>
+                    {/* Only show dropdown button if there are multiple stocks */}
+                    {(constraintGroup.stocks.length + constraintGroup.stockGroups.length) > 1 && (
+                      <button
+                        onClick={() => toggleGroupExpansion(constraintGroup.id)}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                      >
+                        {expandedGroups.has(constraintGroup.id) ? (
+                          <ChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                        )}
+                      </button>
+                    )}
+                    
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {constraintGroup.name}
                     </h3>
+                    
+                    {/* For single stock, show the stock name directly */}
+                    {constraintGroup.stocks.length === 1 && constraintGroup.stockGroups.length === 0 && (
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                        {constraintGroup.stocks[0]}
+                      </span>
+                    )}
+                    
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       constraintGroup.isActive 
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
@@ -631,6 +643,13 @@ const Constraints: React.FC = () => {
                     }`}>
                       {constraintGroup.isActive ? 'Active' : 'Inactive'}
                     </span>
+                    
+                    {/* Only show stock count badge for multiple stocks */}
+                    {(constraintGroup.stocks.length + constraintGroup.stockGroups.length) > 1 && (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full">
+                        {constraintGroup.stocks.length + constraintGroup.stockGroups.length} items
+                      </span>
+                    )}
                   </div>
 
                   {constraintGroup.description && (
@@ -781,7 +800,8 @@ const Constraints: React.FC = () => {
                       Applies to {constraintGroup.stocks.length + constraintGroup.stockGroups.length} items
                     </p>
                     
-                    {expandedGroups.has(constraintGroup.id) && (
+                    {/* Show stocks for single stock groups or when expanded */}
+                    {((constraintGroup.stocks.length + constraintGroup.stockGroups.length) === 1 || expandedGroups.has(constraintGroup.id)) && (
                       <ConstraintGroupStocks 
                         group={constraintGroup} 
                         onUpdate={loadData} 
