@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, TrendingDown, TrendingUp, Target, DollarSign, Percent, AlertCircle, Search, Tag, Users } from 'lucide-react';
 import { CreateConstraintGroupRequest, StockGroup } from '../../types';
 import { stockGroupsService } from '../../services/stockGroups';
+import { getStockInfo } from '../../data/stockDatabase';
+import StockSearchInput from '../Common/StockSearchInput';
 import toast from 'react-hot-toast';
 
 interface CreateConstraintModalProps {
@@ -33,10 +35,10 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
     stockGroups: []
   });
 
-  const [stockSearch, setStockSearch] = useState('');
-  const [customStock, setCustomStock] = useState('');
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [isNameCustom, setIsNameCustom] = useState(false);
   const [newGroupData, setNewGroupData] = useState({
     name: '',
     description: '',
@@ -80,10 +82,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
   // Combine all available stocks (predefined + from selected groups)
   const allAvailableStocks = [...new Set([...allStocks, ...stocksFromGroups])].sort();
 
-  const filteredStocks = allAvailableStocks.filter(stock => 
-    stock.toLowerCase().includes(stockSearch.toLowerCase()) &&
-    !formData.stocks.includes(stock)
-  );
+
 
   // Popular stocks for quick selection (subset of all stocks)
   const popularStocks = [
@@ -106,9 +105,9 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
         stocks: [],
         stockGroups: []
       });
-      setStockSearch('');
-      setCustomStock('');
+
       setErrors({});
+      setIsNameCustom(false);
     }
   }, [isOpen]);
 
@@ -118,9 +117,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
-      if (!formData.name.trim()) {
-        newErrors.name = 'Constraint name is required';
-      }
+      // Name is now optional - will be auto-generated if empty
       if (formData.stocks.length === 0 && formData.stockGroups.length === 0) {
         newErrors.stocks = 'Select at least one stock or stock group';
       }
@@ -160,7 +157,14 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
 
     try {
       setLoading(true);
-      await onSubmit(formData);
+      
+      // Use smart name if no custom name provided
+      const finalData = {
+        ...formData,
+        name: formData.name.trim() || generateSmartName()
+      };
+      
+      await onSubmit(finalData);
       onClose();
       toast.success('Constraint group created successfully!');
     } catch (error) {
@@ -186,13 +190,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
     }));
   };
 
-  const addCustomStock = () => {
-    const stock = customStock.toUpperCase().trim();
-    if (stock && /^[A-Z]{1,5}$/.test(stock) && !formData.stocks.includes(stock)) {
-      addStock(stock);
-      setCustomStock('');
-    }
-  };
+
 
   const toggleStockGroup = (groupId: string) => {
     setFormData(prev => ({
@@ -202,6 +200,57 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
         : [...prev.stockGroups, groupId]
     }));
   };
+
+  // Generate smart name based on selection
+  const generateSmartName = (): string => {
+    // If only one individual stock selected
+    if (formData.stocks.length === 1 && formData.stockGroups.length === 0) {
+      return formData.stocks[0];
+    }
+    
+    // If only one premade group selected
+    if (formData.stocks.length === 0 && formData.stockGroups.length === 1) {
+      const group = stockGroups.find(g => g.id === formData.stockGroups[0]);
+      return group?.name || 'Stock Group';
+    }
+    
+    // If multiple individual stocks selected (custom group)
+    if (formData.stocks.length > 1 && formData.stockGroups.length === 0) {
+      return formData.stocks.join(', ');
+    }
+    
+    // If mix of stocks and groups, combine them
+    if (formData.stocks.length > 0 || formData.stockGroups.length > 0) {
+      const parts: string[] = [];
+      
+      // Add individual stocks
+      if (formData.stocks.length > 0) {
+        parts.push(...formData.stocks);
+      }
+      
+      // Add group names
+      formData.stockGroups.forEach(groupId => {
+        const group = stockGroups.find(g => g.id === groupId);
+        if (group) {
+          parts.push(group.name);
+        }
+      });
+      
+      return parts.join(', ');
+    }
+    
+    return '';
+  };
+
+  // Update name automatically when stocks/groups change (unless user has customized it)
+  useEffect(() => {
+    if (!isNameCustom) {
+      const smartName = generateSmartName();
+      if (smartName) {
+        setFormData(prev => ({ ...prev, name: smartName }));
+      }
+    }
+  }, [formData.stocks, formData.stockGroups, stockGroups, isNameCustom]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -299,36 +348,36 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
         
-        <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-visible transition-colors duration-200">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Create Constraint Group</h2>
-              <p className="text-gray-600 mt-1">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create Constraint Group</h2>
+              <p className="text-gray-600 dark:text-gray-300 mt-1">
                 Step {currentStep} of 2: {currentStep === 1 ? 'Select Stocks' : 'Configure Rules'}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              <X className="h-6 w-6 text-gray-500" />
+              <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
 
           {/* Progress Bar */}
-          <div className="px-6 py-4 bg-gray-50">
+          <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700">
             <div className="flex items-center">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                currentStep >= 1 ? 'bg-blue-600 dark:bg-blue-500 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
               }`}>
                 1
               </div>
               <div className={`flex-1 h-1 mx-4 ${
-                currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
+                currentStep >= 2 ? 'bg-blue-600 dark:bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
               }`} />
               <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                currentStep >= 2 ? 'bg-blue-600 dark:bg-blue-500 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
               }`}>
                 2
               </div>
@@ -341,14 +390,37 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
               <div className="space-y-6">
                 {/* Basic Info */}
                 <div>
-                  <label className="label">Constraint Name *</label>
+                  <div className="flex items-center justify-between">
+                    <label className="label">Constraint Name (Optional)</label>
+                    {isNameCustom && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsNameCustom(false);
+                          setFormData(prev => ({ ...prev, name: generateSmartName() }));
+                        }}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                      >
+                        Reset to Auto
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, name: e.target.value }));
+                      setIsNameCustom(true); // Mark as custom when user types
+                    }}
                     className={`input ${errors.name ? 'border-red-500' : ''}`}
-                    placeholder="e.g., Tech Stock Dip Buying"
+                    placeholder="Auto-generated based on your selection..."
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {isNameCustom 
+                      ? 'Using custom name. Click "Reset to Auto" to use auto-generated name.'
+                      : 'Name will be auto-generated from selected stocks/groups'
+                    }
+                  </p>
                   {errors.name && <p className="error-text">{errors.name}</p>}
                 </div>
 
@@ -364,71 +436,29 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
 
                 {/* Individual Stocks */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <Tag className="h-5 w-5" />
                     Individual Stocks
                   </h3>
                   
-                  {/* Search and Add Custom */}
-                  <div className="flex gap-2 mb-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={stockSearch}
-                        onChange={(e) => setStockSearch(e.target.value)}
-                        className="input pl-10"
-                        placeholder="Type stock name or symbol..."
-                      />
-                      
-                      {/* Autocomplete Dropdown */}
-                      {stockSearch && filteredStocks.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                          {filteredStocks.map((stock) => (
-                            <button
-                              key={stock}
-                              onClick={() => {
-                                addStock(stock);
-                                setStockSearch('');
-                              }}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                            >
-                              <div className="font-medium text-gray-900">{stock}</div>
-                              <div className="text-sm text-gray-500">Click to add</div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={customStock}
-                        onChange={(e) => setCustomStock(e.target.value.toUpperCase())}
-                        className="input w-24"
-                        placeholder="SYMBOL"
-                        maxLength={5}
-                      />
-                      <button
-                        onClick={addCustomStock}
-                        disabled={!customStock.trim() || !/^[A-Z]{1,5}$/.test(customStock.trim())}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
-                    </div>
+                  {/* Enhanced Stock Search */}
+                  <div className="mb-4">
+                    <StockSearchInput 
+                      onStockSelect={addStock}
+                      placeholder="Search by company name or symbol (e.g., Apple, AAPL)..."
+                    />
                   </div>
 
-                  {/* Popular Stocks - Only show when not searching */}
-                  {!stockSearch && (
+                  {/* Popular Stocks */}
+                  {(
                     <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Popular Stocks</h4>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Popular Stocks</h4>
                       <div className="flex flex-wrap gap-2">
                         {popularStocks.filter(stock => !formData.stocks.includes(stock)).slice(0, 12).map((stock) => (
                           <button
                             key={stock}
                             onClick={() => addStock(stock)}
-                            className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors text-sm"
+                            className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
                           >
                             {stock}
                           </button>
@@ -440,22 +470,26 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                   {/* Selected Stocks */}
                   {formData.stocks.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Selected Stocks ({formData.stocks.length})</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">Selected Stocks ({formData.stocks.length})</h4>
                       <div className="flex flex-wrap gap-2">
-                        {formData.stocks.map((stock) => (
-                          <div
-                            key={stock}
-                            className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full"
-                          >
-                            <span className="text-sm font-medium">{stock}</span>
-                            <button
-                              onClick={() => removeStock(stock)}
-                              className="hover:bg-blue-200 rounded-full p-0.5"
+                        {formData.stocks.map((stock) => {
+                          const stockInfo = getStockInfo(stock);
+                          return (
+                            <div
+                              key={stock}
+                              className="flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full"
+                              title={stockInfo ? stockInfo.name : stock}
                             >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
+                              <span className="text-sm font-medium">{stock}</span>
+                              <button
+                                onClick={() => removeStock(stock)}
+                                className="hover:bg-blue-200 dark:hover:bg-blue-900/50 rounded-full p-0.5"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -466,13 +500,13 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                 {/* Stock Groups */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
                       <Users className="h-5 w-5" />
                       Stock Groups
                     </h3>
                     <button
                       onClick={handleCreateNewGroup}
-                      className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center gap-1"
+                      className="px-3 py-1 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors text-sm flex items-center gap-1"
                     >
                       <Plus className="h-4 w-4" />
                       Create New Group
@@ -486,8 +520,8 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                         onClick={() => toggleStockGroup(group.id)}
                         className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                           formData.stockGroups.includes(group.id)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -497,8 +531,8 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                               style={{ backgroundColor: group.color }}
                             />
                             <div>
-                              <h4 className="font-medium text-gray-900">{group.name}</h4>
-                              <p className="text-sm text-gray-600">{group.stocks.length} stocks</p>
+                              <h4 className="font-medium text-gray-900 dark:text-white">{group.name}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">{group.stocks.length} stocks</p>
                             </div>
                           </div>
                           {formData.stockGroups.includes(group.id) && (
@@ -508,16 +542,16 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                           )}
                         </div>
                         {group.description && (
-                          <p className="text-sm text-gray-500 mt-2">{group.description}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{group.description}</p>
                         )}
                         <div className="flex flex-wrap gap-1 mt-2">
                           {group.stocks.slice(0, 6).map((stock) => (
-                            <span key={stock} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                            <span key={stock} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
                               {stock}
                             </span>
                           ))}
                           {group.stocks.length > 6 && (
-                            <span className="text-xs text-gray-500">+{group.stocks.length - 6} more</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">+{group.stocks.length - 6} more</span>
                           )}
                         </div>
                       </div>
@@ -528,9 +562,9 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
 
 
                 {/* Summary */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2">Selection Summary</h4>
-                  <p className="text-blue-800 text-sm">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">Selection Summary</h4>
+                  <p className="text-blue-800 dark:text-blue-300 text-sm">
                     Total stocks: <strong>{getTotalStocks()}</strong>
                     {formData.stockGroups.length > 0 && (
                       <span> ({formData.stockGroups.length} groups, {formData.stocks.length} individual)</span>
@@ -548,7 +582,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                     <div className="p-2 bg-red-100 rounded-lg">
                       <TrendingDown className="h-5 w-5 text-red-600" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900">Buy Trigger (Price Drop)</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Buy Trigger (Price Drop)</h3>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -564,7 +598,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                           min="-50"
                           max="-0.1"
                         />
-                        <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                       </div>
                       {errors.buyTriggerPercent && <p className="error-text">{errors.buyTriggerPercent}</p>}
                     </div>
@@ -581,10 +615,10 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                           min="100"
                           max="100000"
                         />
-                        <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                       </div>
                       {errors.buyAmount && <p className="error-text">{errors.buyAmount}</p>}
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Total potential: {formatCurrency(formData.buyAmount * getTotalStocks())}
                       </p>
                     </div>
@@ -597,7 +631,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                     <div className="p-2 bg-green-100 rounded-lg">
                       <TrendingUp className="h-5 w-5 text-green-600" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900">Sell Trigger (Price Rise)</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Sell Trigger (Price Rise)</h3>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -613,7 +647,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                           min="0.1"
                           max="100"
                         />
-                        <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                       </div>
                       {errors.sellTriggerPercent && <p className="error-text">{errors.sellTriggerPercent}</p>}
                     </div>
@@ -630,7 +664,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                           min="100"
                           max="100000"
                         />
-                        <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                       </div>
                       {errors.sellAmount && <p className="error-text">{errors.sellAmount}</p>}
                     </div>
@@ -643,7 +677,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                     <div className="p-2 bg-blue-100 rounded-lg">
                       <Target className="h-5 w-5 text-blue-600" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900">Profit Target (Optional)</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Profit Target (Optional)</h3>
                   </div>
                   
                   <div>
@@ -659,7 +693,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                         max="500"
                         placeholder="e.g., 15"
                       />
-                      <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                     </div>
                   </div>
                 </div>
@@ -687,7 +721,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
               {currentStep > 1 && (
                 <button
                   onClick={handleBack}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
                   Back
                 </button>
@@ -697,7 +731,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>
@@ -729,18 +763,18 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
           <div className="flex min-h-screen items-center justify-center p-4">
             <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={handleCancelCreateGroup} />
             
-            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden transition-colors duration-200">
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Create New Stock Group</h2>
-                  <p className="text-gray-600 mt-1">Create a custom group of stocks for easy selection</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create New Stock Group</h2>
+                  <p className="text-gray-600 dark:text-gray-300 mt-1">Create a custom group of stocks for easy selection</p>
                 </div>
                 <button
                   onClick={handleCancelCreateGroup}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
 
@@ -749,7 +783,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                 <div className="space-y-4">
                   {/* Group Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Group Name *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group Name *</label>
                     <input
                       type="text"
                       value={newGroupData.name}
@@ -761,24 +795,24 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
 
                   {/* Description */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (Optional)</label>
                     <textarea
                       value={newGroupData.description}
                       onChange={(e) => setNewGroupData(prev => ({ ...prev, description: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
                       placeholder="Describe this stock group..."
                     />
                   </div>
 
                   {/* Color */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
                         value={newGroupData.color}
                         onChange={(e) => setNewGroupData(prev => ({ ...prev, color: e.target.value }))}
-                        className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+                        className="w-12 h-8 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
                       />
                       <span className="text-sm text-gray-600">{newGroupData.color}</span>
                     </div>
@@ -786,53 +820,73 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
 
                   {/* Stock Search */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Add Stocks</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Add Stocks</label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                       <input
                         type="text"
                         value={groupStockSearch}
                         onChange={(e) => setGroupStockSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Search for stocks to add..."
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Search for stocks to add (e.g., AAPL, Apple)..."
                       />
                       
                       {/* Stock Search Dropdown */}
                       {groupStockSearch && filteredGroupStocks.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                           {filteredGroupStocks.slice(0, 10).map((stock) => (
                             <button
                               key={stock}
+                              type="button"
                               onClick={() => addStockToNewGroup(stock)}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                              className="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                             >
-                              <div className="font-medium text-gray-900">{stock}</div>
-                              <div className="text-sm text-gray-500">Click to add</div>
+                              <div className="font-medium text-gray-900 dark:text-white">{stock}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">Click to add to group</div>
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
+
+                    {/* Popular Stocks for Quick Selection */}
+                    {!groupStockSearch && (
+                      <div className="mt-3">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Popular Stocks</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {popularStocks.filter(stock => !newGroupData.stocks.includes(stock)).slice(0, 12).map((stock) => (
+                            <button
+                              key={stock}
+                              type="button"
+                              onClick={() => addStockToNewGroup(stock)}
+                              className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                            >
+                              {stock}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Selected Stocks */}
                   {newGroupData.stocks.length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Selected Stocks ({newGroupData.stocks.length})
                       </label>
-                      <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
+                      <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg max-h-32 overflow-y-auto">
                         {newGroupData.stocks.map((stock) => (
                           <div
                             key={stock}
-                            className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full"
+                            className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full"
                           >
-                            <span className="text-sm font-medium text-gray-900">{stock}</span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">{stock}</span>
                             <button
                               onClick={() => removeStockFromNewGroup(stock)}
-                              className="hover:bg-gray-100 rounded-full p-0.5"
+                              className="hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full p-0.5"
                             >
-                              <X className="h-3 w-3 text-gray-500" />
+                              <X className="h-3 w-3 text-gray-500 dark:text-gray-400" />
                             </button>
                           </div>
                         ))}
@@ -843,10 +897,10 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <button
                   onClick={handleCancelCreateGroup}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
                   Cancel
                 </button>

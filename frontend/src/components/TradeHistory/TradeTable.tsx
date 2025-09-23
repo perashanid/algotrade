@@ -138,7 +138,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
           <thead className="bg-gray-50">
             <tr>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => handleSort('executedAt')}
               >
                 <div className="flex items-center gap-1">
@@ -147,7 +147,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => handleSort('stockSymbol')}
               >
                 <div className="flex items-center gap-1">
@@ -156,7 +156,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => handleSort('tradeType')}
               >
                 <div className="flex items-center gap-1">
@@ -164,11 +164,11 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
                   <SortIcon field="tradeType" />
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Trigger
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => handleSort('quantity')}
               >
                 <div className="flex items-center gap-1">
@@ -177,7 +177,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => handleSort('price')}
               >
                 <div className="flex items-center gap-1">
@@ -186,7 +186,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => handleSort('total')}
               >
                 <div className="flex items-center gap-1">
@@ -194,7 +194,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
                   <SortIcon field="total" />
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Trigger Price
               </th>
             </tr>
@@ -259,7 +259,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               Previous
             </button>
@@ -274,7 +274,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
                     className={`px-3 py-2 text-sm rounded-lg ${
                       currentPage === page
                         ? 'bg-blue-600 text-white'
-                        : 'border border-gray-300 hover:bg-gray-50'
+                        : 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600'
                     }`}
                   >
                     {page}
@@ -289,7 +289,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
                     className={`px-3 py-2 text-sm rounded-lg ${
                       currentPage === totalPages
                         ? 'bg-blue-600 text-white'
-                        : 'border border-gray-300 hover:bg-gray-50'
+                        : 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600'
                     }`}
                   >
                     {totalPages}
@@ -301,7 +301,7 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades }) => {
             <button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               Next
             </button>

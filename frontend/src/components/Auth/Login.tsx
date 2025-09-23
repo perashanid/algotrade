@@ -43,21 +43,21 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center">
-            <TrendingUp className="h-12 w-12 text-blue-600" />
+            <TrendingUp className="h-12 w-12 text-blue-600 dark:text-blue-400" />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
             Sign in to AlgoTrader
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
             Or{' '}
             <Link
               to="/register"
-              className="font-medium text-blue-600 hover:text-blue-500"
+              className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
             >
               create a new account
             </Link>
@@ -66,7 +66,7 @@ const Login: React.FC = () => {
             <button
               type="button"
               onClick={fillDemoCredentials}
-              className="text-sm font-medium text-green-600 hover:text-green-500 underline"
+              className="text-sm font-medium text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300 underline"
             >
               Try Demo Account
             </button>
@@ -78,7 +78,7 @@ const Login: React.FC = () => {
           <div className="space-y-4">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email address
               </label>
               <input
@@ -89,14 +89,14 @@ const Login: React.FC = () => {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 placeholder="Enter your email"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Password
               </label>
               <div className="relative">
@@ -108,7 +108,7 @@ const Login: React.FC = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                   placeholder="Enter your password"
                 />
                 <button
@@ -117,9 +117,9 @@ const Login: React.FC = () => {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   )}
                 </button>
               </div>
@@ -127,7 +127,7 @@ const Login: React.FC = () => {
           </div>
 
           {/* Demo Account Info */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
@@ -135,8 +135,8 @@ const Login: React.FC = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">Demo Account</h3>
-                <div className="mt-2 text-sm text-green-700">
+                <h3 className="text-sm font-medium text-green-800 dark:text-green-300">Demo Account</h3>
+                <div className="mt-2 text-sm text-green-700 dark:text-green-300">
                   <p><strong>Email:</strong> demo@algotrader.com</p>
                   <p><strong>Password:</strong> demo123</p>
                   <p className="mt-1 text-xs">Pre-loaded with sample portfolio data</p>
@@ -150,7 +150,7 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>

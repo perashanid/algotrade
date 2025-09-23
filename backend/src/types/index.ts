@@ -33,6 +33,14 @@ export interface StockGroup {
   updatedAt: Date;
 }
 
+export interface StockConstraintOverride {
+  buyTriggerPercent?: number;
+  sellTriggerPercent?: number;
+  profitTriggerPercent?: number;
+  buyAmount?: number;
+  sellAmount?: number;
+}
+
 export interface ConstraintGroup {
   id: string;
   userId: string;
@@ -46,6 +54,7 @@ export interface ConstraintGroup {
   isActive: boolean;
   stocks: string[];
   stockGroups: string[];
+  stockOverrides?: { [stockSymbol: string]: StockConstraintOverride };
   createdAt: Date;
   updatedAt: Date;
 }

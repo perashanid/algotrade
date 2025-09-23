@@ -402,8 +402,8 @@ const LegacyStocks: React.FC<LegacyStocksProps> = ({ onConstraintCreated }) => {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Legacy Stocks</h2>
-        <p className="text-gray-600">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Legacy Stocks</h2>
+        <p className="text-gray-600 dark:text-gray-300">
           Time-tested companies with proven track records and consistent dividend payments
         </p>
       </div>
@@ -416,8 +416,8 @@ const LegacyStocks: React.FC<LegacyStocksProps> = ({ onConstraintCreated }) => {
             onClick={() => setFilter(category)}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
               filter === category
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {category === 'all' ? 'All Categories' : category}

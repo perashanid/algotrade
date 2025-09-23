@@ -65,27 +65,27 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
       return <div className="w-4 h-4" />;
     }
     return sortDirection === 'asc' ? (
-      <ChevronUp className="w-4 h-4 text-blue-600" />
+      <ChevronUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
     ) : (
-      <ChevronDown className="w-4 h-4 text-blue-600" />
+      <ChevronDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
     );
   };
 
   if (activePositions.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">No active positions to display</p>
+        <p className="text-gray-500 dark:text-gray-400">No active positions to display</p>
       </div>
     );
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
             <th
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => handleSort('stockSymbol')}
             >
               <div className="flex items-center gap-1">
@@ -94,7 +94,7 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
               </div>
             </th>
             <th
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => handleSort('quantity')}
             >
               <div className="flex items-center gap-1">
@@ -103,7 +103,7 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
               </div>
             </th>
             <th
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => handleSort('marketValue')}
             >
               <div className="flex items-center gap-1">
@@ -112,7 +112,7 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
               </div>
             </th>
             <th
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => handleSort('unrealizedPnl')}
             >
               <div className="flex items-center gap-1">
@@ -121,7 +121,7 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
               </div>
             </th>
             <th
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => handleSort('unrealizedPnlPercent')}
             >
               <div className="flex items-center gap-1">
@@ -129,39 +129,39 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
                 <SortIcon field="unrealizedPnlPercent" />
               </div>
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Constraint
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
           {sortedPositions.map((position) => (
-            <tr key={position.stockSymbol} className="hover:bg-gray-50">
+            <tr key={position.stockSymbol} className="hover:bg-gray-50 dark:hover:bg-gray-700">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
-                  <div className="font-medium text-gray-900">{position.stockSymbol}</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{position.stockSymbol}</div>
                   {position.currentPrice && (
-                    <div className="ml-2 text-sm text-gray-500">
+                    <div className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                       ${position.currentPrice.toFixed(2)}
                     </div>
                   )}
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                 {formatNumber(position.quantity)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                 {formatCurrency(position.marketValue)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center gap-1">
                   {position.unrealizedPnl >= 0 ? (
-                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
                   ) : (
-                    <TrendingDown className="h-4 w-4 text-red-600" />
+                    <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
                   )}
                   <span className={`text-sm font-medium ${
-                    position.unrealizedPnl >= 0 ? 'text-green-600' : 'text-red-600'
+                    position.unrealizedPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                   }`}>
                     {formatCurrency(position.unrealizedPnl)}
                   </span>
@@ -169,16 +169,16 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`text-sm font-medium ${
-                  position.unrealizedPnlPercent >= 0 ? 'text-green-600' : 'text-red-600'
+                  position.unrealizedPnlPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 }`}>
                   {formatPercent(position.unrealizedPnlPercent)}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">
+                <div className="text-sm text-gray-900 dark:text-white">
                   {position.constraintName || 'Individual'}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {position.constraintType === 'group' ? 'Group' : 'Individual'}
                 </div>
               </td>

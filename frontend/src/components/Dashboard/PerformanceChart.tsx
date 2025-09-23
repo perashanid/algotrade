@@ -28,7 +28,7 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
   if (loading) {
     return (
       <div className="animate-pulse">
-        <div className="h-64 bg-gray-200 rounded"></div>
+        <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
       </div>
     );
   }
@@ -52,8 +52,8 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
     <div className="space-y-6">
       {/* Performance Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="text-center p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-600 mb-1">Total Return</p>
+        <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Return</p>
           <p className={clsx(
             'text-2xl font-bold',
             performance.totalReturn >= 0 ? 'text-success-600' : 'text-danger-600'
@@ -68,8 +68,8 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
           </p>
         </div>
 
-        <div className="text-center p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-600 mb-1">vs Benchmark</p>
+        <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">vs Benchmark</p>
           <p className={clsx(
             'text-2xl font-bold',
             performance.benchmarkComparison >= 0 ? 'text-success-600' : 'text-danger-600'
@@ -81,9 +81,9 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
           </p>
         </div>
 
-        <div className="text-center p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-600 mb-1">Sharpe Ratio</p>
-          <p className="text-2xl font-bold text-gray-900">
+        <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Sharpe Ratio</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {performance.sharpeRatio?.toFixed(2) || 'N/A'}
           </p>
           <p className="text-sm text-gray-600">Risk-adjusted return</p>
@@ -97,8 +97,8 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
           {timeRanges.map((range) => {
             const isPositive = range.value >= 0;
             return (
-              <div key={range.label} className="text-center p-4 border border-gray-200 rounded-lg">
-                <p className="text-sm text-gray-600 mb-2">{range.label}</p>
+              <div key={range.label} className="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{range.label}</p>
                 <div className={clsx(
                   'flex items-center justify-center mb-1',
                   isPositive ? 'text-success-600' : 'text-danger-600'
@@ -123,15 +123,15 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-4">Risk Metrics</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Max Drawdown</p>
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Max Drawdown</p>
               <p className="text-xl font-semibold text-danger-600">
                 {formatPercent(performance.maxDrawdown)}
               </p>
             </div>
-            <div className="p-4 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Volatility</p>
-              <p className="text-xl font-semibold text-gray-900">
+            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Volatility</p>
+              <p className="text-xl font-semibold text-gray-900 dark:text-white">
                 {Math.abs(performance.totalReturnPercent * 0.3).toFixed(2)}%
               </p>
             </div>

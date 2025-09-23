@@ -31,12 +31,12 @@ const PositionList: React.FC<PositionListProps> = ({ positions, onRefresh }) => 
 
   if (positions.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
+          <div className="text-gray-400 dark:text-gray-500 mb-4">
             <TrendingUp className="h-12 w-12 mx-auto" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Positions</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Positions</h3>
           <p className="text-gray-600 mb-4">
             You don't have any positions yet. Start by creating trading constraints.
           </p>
@@ -46,9 +46,9 @@ const PositionList: React.FC<PositionListProps> = ({ positions, onRefresh }) => 
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Positions</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Positions</h2>
         <button
           onClick={onRefresh}
           className="text-sm text-blue-600 hover:text-blue-700"
@@ -87,29 +87,29 @@ const PositionList: React.FC<PositionListProps> = ({ positions, onRefresh }) => 
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {positions.map((position) => {
               const { gainLoss, gainLossPercent, currentValue } = calculateGainLoss(position);
               const isPositive = gainLoss >= 0;
               const currentPrice = position.currentPrice || position.averageCost;
 
               return (
-                <tr key={position.id} className="hover:bg-gray-50">
+                <tr key={position.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {position.stockSymbol}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {position.quantity.toFixed(4)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {formatCurrency(position.averageCost)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {formatCurrency(currentPrice)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {formatCurrency(currentValue)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -23,14 +23,14 @@ const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {/* Total Value */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
         <div className="flex items-center">
           <div className="flex-shrink-0">
-            <DollarSign className="h-8 w-8 text-blue-600" />
+            <DollarSign className="h-8 w-8 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Total Value</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Value</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {formatCurrency(portfolio.totalValue)}
             </p>
           </div>
@@ -38,18 +38,18 @@ const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio }) => {
       </div>
 
       {/* Total Gain/Loss */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
         <div className="flex items-center">
           <div className="flex-shrink-0">
             {isPositive ? (
-              <TrendingUp className="h-8 w-8 text-green-600" />
+              <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-400" />
             ) : (
-              <TrendingDown className="h-8 w-8 text-red-600" />
+              <TrendingDown className="h-8 w-8 text-red-600 dark:text-red-400" />
             )}
           </div>
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Total Gain/Loss</p>
-            <p className={`text-2xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Gain/Loss</p>
+            <p className={`text-2xl font-bold ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {formatCurrency(portfolio.totalGainLoss)}
             </p>
           </div>
@@ -57,18 +57,18 @@ const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio }) => {
       </div>
 
       {/* Percentage Return */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
         <div className="flex items-center">
           <div className="flex-shrink-0">
             {isPositive ? (
-              <TrendingUp className="h-8 w-8 text-green-600" />
+              <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-400" />
             ) : (
-              <TrendingDown className="h-8 w-8 text-red-600" />
+              <TrendingDown className="h-8 w-8 text-red-600 dark:text-red-400" />
             )}
           </div>
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Return</p>
-            <p className={`text-2xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Return</p>
+            <p className={`text-2xl font-bold ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {formatPercent(portfolio.totalGainLossPercent)}
             </p>
           </div>
@@ -76,14 +76,14 @@ const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio }) => {
       </div>
 
       {/* Position Count */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
         <div className="flex items-center">
           <div className="flex-shrink-0">
-            <PieChart className="h-8 w-8 text-blue-600" />
+            <PieChart className="h-8 w-8 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Positions</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Positions</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {portfolio.positions.length}
             </p>
           </div>

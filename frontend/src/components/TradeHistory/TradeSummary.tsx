@@ -87,8 +87,8 @@ const TradeSummary: React.FC<TradeSummaryProps> = ({ trades }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="text-sm text-gray-600">{label}</p>
+        <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm font-medium" style={{ color: entry.color }}>
               {entry.name}: {formatCurrency(entry.value)}
@@ -112,7 +112,7 @@ const TradeSummary: React.FC<TradeSummaryProps> = ({ trades }) => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Monthly Volume Chart */}
       <div className="lg:col-span-2 card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Trading Volume</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Monthly Trading Volume</h3>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -141,7 +141,7 @@ const TradeSummary: React.FC<TradeSummaryProps> = ({ trades }) => {
 
       {/* Trigger Type Distribution */}
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Trigger Types</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Trigger Types</h3>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -180,12 +180,12 @@ const TradeSummary: React.FC<TradeSummaryProps> = ({ trades }) => {
 
       {/* Top Traded Stocks */}
       <div className="lg:col-span-3 card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Traded Stocks</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Traded Stocks</h3>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {topStocks.map((stock: any, index) => (
-            <div key={stock.symbol} className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-lg font-bold text-gray-900">{stock.symbol}</div>
-              <div className="text-sm text-gray-600">{stock.trades} trades</div>
+            <div key={stock.symbol} className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="text-lg font-bold text-gray-900 dark:text-white">{stock.symbol}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">{stock.trades} trades</div>
               <div className="text-sm font-medium text-blue-600">
                 {formatCurrency(stock.volume)}
               </div>

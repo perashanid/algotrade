@@ -16,7 +16,7 @@ const QuickActions: React.FC = () => {
       description: 'View and edit existing constraints',
       icon: Settings,
       href: '/constraints',
-      color: 'bg-gray-600 hover:bg-gray-700',
+      color: 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600',
     },
     {
       title: 'Analytics',
@@ -42,8 +42,8 @@ const QuickActions: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Quick Actions</h2>
       <div className="space-y-4">
         {actions.map((action) => {
           const Icon = action.icon;
@@ -51,7 +51,7 @@ const QuickActions: React.FC = () => {
             <Link
               key={action.title}
               to={action.href}
-              className="block p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+              className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
             >
               <div className="flex items-center">
                 <div className={`flex-shrink-0 p-2 rounded-lg ${action.color}`}>

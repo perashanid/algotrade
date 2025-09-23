@@ -42,6 +42,66 @@ export const constraintGroupsService = {
     throw new Error(response.data.error?.message || 'Failed to toggle constraint group');
   },
 
+  async updateStockConstraint(
+    groupId: string, 
+    stockSymbol: string, 
+    constraints: {
+      buyTriggerPercent?: number;
+      sellTriggerPercent?: number;
+      profitTriggerPercent?: number;
+      buyAmount?: number;
+      sellAmount?: number;
+    }
+  ): Promise<ConstraintGroup> {
+    const response = await api.put<APIResponse<ConstraintGroup>>(
+      `/constraint-groups/${groupId}/stocks/${stockSymbol}`, 
+      constraints
+    );
+    
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    
+    throw new Error(response.data.error?.message || 'Failed to update stock constraint');
+  },
+
+  async removeStockConstraint(groupId: string, stockSymbol: string): Promise<ConstraintGroup> {
+    const response = await api.delete<APIResponse<ConstraintGroup>>(
+      `/constraint-groups/${groupId}/stocks/${stockSymbol}`
+    );
+    
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    
+    throw new Error(response.data.error?.message || 'Failed to remove stock constraint');
+  },
+
+  async addStockToGroup(groupId: string, stockSymbol: string): Promise<ConstraintGroup> {
+    const response = await api.post<APIResponse<ConstraintGroup>>(
+      `/constraint-groups/${groupId}/stocks`, 
+      { stockSymbol }
+    );
+    
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    
+    throw new Error(response.data.error?.message || 'Failed to add stock to group');
+  },
+
+  async removeStockFromGroup(groupId: string, stockSymbol: string): Promise<ConstraintGroup> {
+    const response = await api.delete<APIResponse<ConstraintGroup>>(
+      `/constraint-groups/${groupId}/stocks/${stockSymbol}/remove`
+    );
+    
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    
+    throw new Error(response.data.error?.message || 'Failed to remove stock from group');
+  },
+
   async deleteConstraintGroup(id: string): Promise<void> {
     const response = await api.delete<APIResponse<null>>(`/constraint-groups/${id}`);
     
