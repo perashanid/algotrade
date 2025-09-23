@@ -175,3 +175,6 @@ jest.config.*
 # Build outputs
 api/dist/
 backend/dist/
+
+# Test files
+test-api.html
