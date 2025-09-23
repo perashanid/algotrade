@@ -1,4 +1,11 @@
-node_modules
+# Dependencies
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
 # Environment variables
 .env
@@ -6,14 +13,13 @@ node_modules
 .env.development.local
 .env.test.local
 .env.production.local
+.env.example
 
 # Logs
-logs
+logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
+combined.log
+error.log
 
 # Runtime data
 pids
@@ -22,18 +28,88 @@ pids
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage
+coverage/
 *.lcov
+.nyc_output/
 
-# nyc test coverage
-.nyc_output
+# Build outputs
+build/
+dist/
+*/build/
+*/dist/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
 
-# Dependency directories
-node_modules/
-jspm_packages/
+# Test files and directories
+__tests__/
+*/__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+test/
+tests/
+coverage/
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# Temporary folders
+tmp/
+temp/
+.tmp/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Package files
+*.tgz
+*.tar.gz
+*.zip
+*.rar
 
 # Optional npm cache directory
-.npm
+.npm/
+.yarn-integrity
+
+# Optional REPL history
+.node_repl_history
+
+# ESLint cache
+.eslintcache
+
+# Stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -44,48 +120,50 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env
-.env.test
-
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
-
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
 
 # Storybook build outputs
 .out
 .storybook-out
 
-# Temporary folders
-tmp/
-temp/
+# Serverless directories
+.serverless/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# FuseBox cache
+.fusebox/
 
-# Build outputs
-build/
-dist/
+# DynamoDB Local files
+.dynamodb/
 
-# Database
-*.sqlite
-*.db
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Performance and optimization files
+PERFORMANCE_IMPROVEMENTS.md
+test-performance.*
+*test-optimizations.*
+*test-db-connection.*
+*test-new-db.*
+
+# Nginx configuration files
+nginx.conf
+*/nginx.conf
+
+# Deployment configuration files
+vercel.json
+netlify.toml
+
+# Jest configuration
+jest.config.*

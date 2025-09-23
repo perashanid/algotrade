@@ -7,19 +7,19 @@ export const CacheKeys = {
     portfolio: (userId: string) => `portfolio:${userId}`,
     portfolioSummary: (userId: string) => `portfolio:summary:${userId}`,
     positions: (userId: string) => `positions:${userId}`,
-    
+
     // Constraint related keys
     constraints: (userId: string) => `constraints:${userId}`,
     constraintGroups: (userId: string) => `constraint_groups:${userId}`,
     constraintPositions: (userId: string) => `constraint_positions:${userId}`,
     groupSummary: (userId: string) => `group_summary:${userId}`,
-    
+
     // Market data keys
     stockPrice: (symbol: string) => `stock_price:${symbol.toUpperCase()}`,
     marketData: (symbol: string) => `market_data:${symbol.toUpperCase()}`,
     benchmarkData: (timeRange: string) => `benchmark:${timeRange}`,
     multiplePrices: (symbols: string[]) => `prices:${symbols.sort().join(',')}`,
-    
+
     // User patterns for invalidation
     userPattern: (userId: string) => `*:${userId}*`,
     stockPattern: (symbol: string) => `*:${symbol.toUpperCase()}*`,
@@ -33,7 +33,7 @@ export const CacheTTL = {
     MEDIUM: 300,      // 5 minutes - for moderately changing data
     LONG: 1800,       // 30 minutes - for rarely changing data
     VERY_LONG: 3600,  // 1 hour - for static data
-    
+
     // Specific TTLs
     STOCK_PRICE: 60,          // Stock prices change frequently
     PORTFOLIO: 300,           // Portfolio data changes moderately
@@ -70,7 +70,7 @@ export class CacheService {
         try {
             const results = await memoryCache.mget(keys);
             const parsed = new Map<string, T>();
-            
+
             for (const [key, value] of results.entries()) {
                 try {
                     parsed.set(key, JSON.parse(value));
@@ -78,7 +78,7 @@ export class CacheService {
                     console.error(`Cache parse error for key ${key}:`, parseError);
                 }
             }
-            
+
             return parsed;
         } catch (error) {
             console.error('Cache mget error:', error);
@@ -90,11 +90,11 @@ export class CacheService {
     static async mset<T>(entries: Map<string, T>, ttl?: number): Promise<void> {
         try {
             const serialized = new Map<string, string>();
-            
+
             for (const [key, value] of entries.entries()) {
                 serialized.set(key, JSON.stringify(value));
             }
-            
+
             await memoryCache.mset(serialized, ttl);
         } catch (error) {
             console.error('Cache mset error:', error);
@@ -132,8 +132,8 @@ export class CacheService {
 
     // Cache with fallback - try cache first, then fallback function
     static async getOrSet<T>(
-        key: string, 
-        fallbackFn: () => Promise<T>, 
+        key: string,
+        fallbackFn: () => Promise<T>,
         ttl?: number
     ): Promise<T> {
         try {
@@ -145,10 +145,10 @@ export class CacheService {
 
             // Cache miss - execute fallback function
             const result = await fallbackFn();
-            
+
             // Store in cache for next time
             await this.set(key, result, ttl);
-            
+
             return result;
         } catch (error) {
             console.error(`Cache getOrSet error for key ${key}:`, error);
@@ -220,8 +220,8 @@ export class CacheService {
 
     // Background refresh - refresh cache without blocking
     static async backgroundRefresh<T>(
-        key: string, 
-        refreshFn: () => Promise<T>, 
+        key: string,
+        refreshFn: () => Promise<T>,
         ttl?: number
     ): Promise<void> {
         // Don't await - let it run in background
@@ -253,10 +253,10 @@ export class CacheInvalidationStrategy {
 
     // Invalidate when stock prices update
     static async onPriceUpdate(symbols: string[]): Promise<void> {
-        const invalidationPromises = symbols.map(symbol => 
+        const invalidationPromises = symbols.map(symbol =>
             CacheService.invalidateStock(symbol)
         );
-        
+
         await Promise.all(invalidationPromises);
     }
 
