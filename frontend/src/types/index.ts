@@ -200,7 +200,7 @@ export interface ConstraintGroup {
   sellAmount: number;
   isActive: boolean;
   stocks: string[];
-  stockGroups: string[];
+  stockGroups: StockGroup[];
   stockOverrides?: { [stockSymbol: string]: StockConstraintOverride };
   createdAt: string;
   updatedAt: string;
@@ -215,7 +215,7 @@ export interface CreateConstraintGroupRequest {
   buyAmount: number;
   sellAmount: number;
   stocks: string[];
-  stockGroups: string[];
+  stockGroups: string[]; // IDs when creating, but full objects when returned
 }
 
 export interface CreateStockGroupRequest {

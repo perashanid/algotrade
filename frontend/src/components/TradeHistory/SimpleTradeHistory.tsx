@@ -1,7 +1,6 @@
 import React from 'react';
 
 const SimpleTradeHistory: React.FC = () => {
-  console.log('SimpleTradeHistory rendering...');
   
   return (
     <div className="p-8">

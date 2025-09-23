@@ -9,6 +9,7 @@ import CreateConstraintModal from './CreateConstraintModal';
 import CreateStockGroupModal from './CreateStockGroupModal';
 import StockGroupManager from './StockGroupManager';
 import LegacyStocks from './LegacyStocks';
+import ConstraintGroupStocks from './ConstraintGroupStocks';
 import StockSearchInput from '../Common/StockSearchInput';
 import { getStockInfo } from '../../data/stockDatabase';
 import toast from 'react-hot-toast';
@@ -25,8 +26,7 @@ const Constraints: React.FC = () => {
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editingStock, setEditingStock] = useState<string | null>(null);
   const [editingIndividual, setEditingIndividual] = useState<string | null>(null);
-  const [addingStockToGroup, setAddingStockToGroup] = useState<string | null>(null);
-  const [newStockSymbol, setNewStockSymbol] = useState('');
+  // Removed unused state variables - now handled by ConstraintGroupStocks component
   const [editValues, setEditValues] = useState<{
     buyTriggerPercent: number;
     sellTriggerPercent: number;
@@ -54,6 +54,8 @@ const Constraints: React.FC = () => {
         constraintGroupsService.getConstraintGroups(),
         stockGroupsService.getStockGroups()
       ]);
+      
+
       
       setConstraints(constraintsData);
       setConstraintGroups(constraintGroupsData);
@@ -200,34 +202,7 @@ const Constraints: React.FC = () => {
     });
   };
 
-  const handleAddStockToGroup = async (groupId: string, stockSymbol: string) => {
-    if (!stockSymbol.trim()) {
-      toast.error('Please select a stock symbol');
-      return;
-    }
-    
-    try {
-      await constraintGroupsService.addStockToGroup(groupId, stockSymbol.trim());
-      toast.success(`${stockSymbol} added to group successfully!`);
-      setAddingStockToGroup(null);
-      setNewStockSymbol('');
-      await loadData();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to add stock to group');
-    }
-  };
-
-  const handleRemoveStockFromGroup = async (groupId: string, stockSymbol: string) => {
-    if (window.confirm(`Are you sure you want to remove ${stockSymbol} from this group?`)) {
-      try {
-        await constraintGroupsService.removeStockFromGroup(groupId, stockSymbol);
-        toast.success(`${stockSymbol} removed from group successfully!`);
-        await loadData();
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Failed to remove stock from group');
-      }
-    }
-  };
+  // Stock management functions moved to ConstraintGroupStocks component
 
   const handleEditStock = (groupId: string, stock: string, group: ConstraintGroup) => {
     setEditingStock(`${groupId}-${stock}`);
@@ -777,6 +752,12 @@ const Constraints: React.FC = () => {
                     </p>
                     
                     {expandedGroups.has(constraintGroup.id) && (
+                      <ConstraintGroupStocks 
+                        group={constraintGroup} 
+                        onUpdate={loadData} 
+                      />
+                    )}
+                    {false && expandedGroups.has(constraintGroup.id) && (
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">

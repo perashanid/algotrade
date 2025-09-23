@@ -50,8 +50,7 @@ const ConstraintPositionList: React.FC = () => {
       setPositions(positionsData);
       setIndividualConstraints(individualConstraintsData);
 
-      // Debug: Log the loaded groups to see if stocks are present
-      console.log('Loaded constraint groups:', groupsData);
+
 
       // Expand all groups by default
       const allGroupIds = new Set(groupsData.map(group => group.id));
@@ -630,10 +629,7 @@ const ConstraintPositionList: React.FC = () => {
 
                 {/* Individual Stocks with Detailed Constraints */}
                 <div className="space-y-3">
-                  {/* Debug info */}
-                  <div className="text-xs text-gray-400 mb-2">
-                    Debug: Group "{group.name}" has {group.stocks.length} stocks: [{group.stocks.join(', ')}]
-                  </div>
+
 
                   {group.stocks.length === 0 ? (
                     <div className="text-center py-4 text-gray-500 dark:text-gray-400">
