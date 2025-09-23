@@ -26,7 +26,18 @@ Set these in your Vercel dashboard:
 DATABASE_URL=your_postgresql_connection_string
 JWT_SECRET=your_jwt_secret_key
 FINNHUB_API_KEY=your_finnhub_api_key
+NODE_ENV=production
 ```
+
+## API Endpoints
+
+After deployment, these endpoints will be available:
+
+- `GET /api/health` - Health check
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration  
+- `GET /api/portfolio` - Portfolio data
+- `GET /api/constraints` - Trading constraints
 
 ## Project Structure
 
