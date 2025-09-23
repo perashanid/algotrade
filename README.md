@@ -4,22 +4,43 @@ A full-stack algorithmic trading platform with custom constraints and portfolio 
 
 ## Quick Start
 
+### Development
 ```bash
-# Install dependencies
 npm install
-cd backend && npm install
-cd ../frontend && npm install
-
-# Run development servers
 npm run dev
+```
+
+### Deploy to Vercel
+1. Fork this repository
+2. Connect to [Vercel](https://vercel.com)
+3. Set environment variables in Vercel dashboard
+4. Deploy
+
+## Environment Variables
+
+Set these in your Vercel dashboard:
+
+```env
+DATABASE_URL=your_postgresql_connection_string
+JWT_SECRET=your_jwt_secret_key
+FINNHUB_API_KEY=your_finnhub_api_key
 ```
 
 ## Project Structure
 
-- `backend/` - Node.js/Express API server
-- `frontend/` - React frontend application
-- `.kiro/` - Kiro AI assistant specifications
+```
+├── api/           # Vercel serverless functions
+├── backend/       # Local development backend
+├── frontend/      # React frontend
+└── database/      # Database schema
+```
 
-## Environment Setup
+## Technology Stack
 
-Copy `.env.example` to `.env` and configure your environment variables.
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS
+- **Backend**: Node.js, Express, PostgreSQL
+- **Deployment**: Vercel
+
+## License
+
+MIT
