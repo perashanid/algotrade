@@ -42,7 +42,7 @@ app.use(helmet({
 // CORS configuration for Vercel
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL || 'https://localhost:3000'] // Uses FRONTEND_URL env variable
+    ? ['https://algotrade-flax.vercel.app', process.env.FRONTEND_URL || 'https://algotrade-flax.vercel.app'] // Allow your actual domain
     : ['http://localhost:3000'],
   credentials: true,
 }));
