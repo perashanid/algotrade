@@ -128,37 +128,27 @@ async function seedStockGroups() {
         const client = await pool.connect();
         
         try {
-          await client.query('BEGIN');
+          // Check if group already exists for this user
+          const existingGroup = await client.query(`
+            SELECT id FROM stock_groups 
+            WHERE user_id = $1 AND name = $2
+          `, [user.id, group.name]);
           
-          // Create the stock group (skip if already exists)
-          const groupResult = await client.query(`
-            INSERT INTO stock_groups (user_id, name, description)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (user_id, name) DO NOTHING
-            RETURNING id
-          `, [user.id, group.name, group.description]);
-          
-          if (groupResult.rows.length > 0) {
-            const groupId = groupResult.rows[0].id;
-            
-            // Add stocks to the group
-            for (const stock of group.stocks) {
-              await client.query(`
-                INSERT INTO stock_group_members (group_id, stock_symbol)
-                VALUES ($1, $2)
-                ON CONFLICT (group_id, stock_symbol) DO NOTHING
-              `, [groupId, stock.toUpperCase()]);
-            }
-            
-            console.log(`✅ Created "${group.name}" with ${group.stocks.length} stocks for user ${user.id}`);
-          } else {
+          if (existingGroup.rows.length > 0) {
             console.log(`⏭️ Skipped "${group.name}" (already exists) for user ${user.id}`);
+            client.release();
+            continue;
           }
           
-          await client.query('COMMIT');
+          // Create the stock group with stocks as JSON array
+          await client.query(`
+            INSERT INTO stock_groups (user_id, name, description, stocks, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, NOW(), NOW())
+          `, [user.id, group.name, group.description, JSON.stringify(group.stocks)]);
+          
+          console.log(`✅ Created "${group.name}" with ${group.stocks.length} stocks for user ${user.id}`);
           
         } catch (error) {
-          await client.query('ROLLBACK');
           console.error(`❌ Failed to create "${group.name}" for user ${user.id}:`, error);
           throw error;
         } finally {

@@ -53,7 +53,7 @@ export interface ConstraintGroup {
   sellAmount: number;
   isActive: boolean;
   stocks: string[];
-  stockGroups: string[];
+  stockGroups: StockGroup[];
   stockOverrides?: { [stockSymbol: string]: StockConstraintOverride };
   createdAt: Date;
   updatedAt: Date;

@@ -49,7 +49,6 @@ export const tradeHistoryService = {
       throw new Error(response.data.error?.message || 'Failed to fetch trade history');
     } catch (error) {
       // Return mock data if API fails
-      console.log('Using mock trade history data');
       return new Promise(resolve => {
         setTimeout(() => resolve(generateMockTrades()), 500);
       });
@@ -67,7 +66,6 @@ export const tradeHistoryService = {
       throw new Error(response.data.error?.message || 'Failed to fetch closed positions');
     } catch (error) {
       // Return empty array if API fails
-      console.log('Using mock closed positions data');
       return [];
     }
   }

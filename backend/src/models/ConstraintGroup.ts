@@ -1,5 +1,10 @@
 import { pool } from '../config/database';
-import { ConstraintGroup, CreateConstraintGroupRequest } from '../types';
+import { ConstraintGroup, CreateConstraintGroupRequest, StockGroup } from '../types';
+
+// Intermediate interface for constraint groups with stock group IDs
+interface ConstraintGroupWithIds extends Omit<ConstraintGroup, 'stockGroups'> {
+  stockGroups: string[];
+}
 
 export class ConstraintGroupModel {
   static async create(userId: string, constraintData: CreateConstraintGroupRequest): Promise<ConstraintGroup> {
@@ -50,11 +55,19 @@ export class ConstraintGroupModel {
       
       await client.query('COMMIT');
       
-      return this.mapRowToConstraintGroup({
+      // For create, we return a simple constraint group with empty stock groups
+      // since we don't need to populate the full objects for creation
+      const groupWithIds = this.mapRowToConstraintGroup({
         ...constraint,
         stocks: constraintData.stocks,
-        stockGroups: constraintData.stockGroups
+        stock_groups: constraintData.stockGroups
       });
+      
+      // Convert to full ConstraintGroup with empty stock groups array
+      return {
+        ...groupWithIds,
+        stockGroups: []
+      };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -82,7 +95,53 @@ export class ConstraintGroupModel {
     `;
     
     const result = await pool.query(query, [userId]);
-    const constraintGroups = result.rows.map(row => this.mapRowToConstraintGroup(row));
+    const constraintGroupsWithIds = result.rows.map(row => this.mapRowToConstraintGroup(row));
+    
+    // Convert to full ConstraintGroup objects with populated stock groups
+    const constraintGroups: ConstraintGroup[] = [];
+    
+    for (const groupWithIds of constraintGroupsWithIds) {
+      // Load full stock group objects
+      let fullStockGroups: StockGroup[] = [];
+      if (groupWithIds.stockGroups.length > 0) {
+        const stockGroupsQuery = `
+          SELECT id, user_id, name, description, color, stocks, created_at, updated_at
+          FROM stock_groups
+          WHERE id = ANY($1) AND user_id = $2
+        `;
+        const stockGroupsResult = await pool.query(stockGroupsQuery, [groupWithIds.stockGroups, userId]);
+        
+        // Map the stock groups with parsed stocks
+        fullStockGroups = stockGroupsResult.rows.map((sgRow: any) => {
+          let stocks = [];
+          try {
+            stocks = sgRow.stocks ? JSON.parse(sgRow.stocks) : [];
+            if (!Array.isArray(stocks)) stocks = [];
+          } catch (e) {
+            stocks = [];
+          }
+          
+          return {
+            id: sgRow.id,
+            userId: sgRow.user_id,
+            name: sgRow.name,
+            description: sgRow.description,
+            color: sgRow.color,
+            stocks: stocks.filter((s: string) => s && typeof s === 'string'),
+            createdAt: sgRow.created_at,
+            updatedAt: sgRow.updated_at
+          };
+        });
+      }
+      
+      // Create the full ConstraintGroup object
+      const fullGroup: ConstraintGroup = {
+        ...groupWithIds,
+        stockGroups: fullStockGroups
+      };
+      
+      constraintGroups.push(fullGroup);
+    }
     
     // Load individual stock overrides for each group
     for (const group of constraintGroups) {
@@ -127,7 +186,46 @@ export class ConstraintGroupModel {
     `;
     
     const result = await pool.query(query, [constraintId, userId]);
-    return result.rows[0] ? this.mapRowToConstraintGroup(result.rows[0]) : null;
+    if (!result.rows[0]) return null;
+    
+    const groupWithIds = this.mapRowToConstraintGroup(result.rows[0]);
+    
+    // Load full stock group objects
+    let fullStockGroups: StockGroup[] = [];
+    if (groupWithIds.stockGroups.length > 0) {
+      const stockGroupsQuery = `
+        SELECT id, user_id, name, description, color, stocks, created_at, updated_at
+        FROM stock_groups
+        WHERE id = ANY($1) AND user_id = $2
+      `;
+      const stockGroupsResult = await pool.query(stockGroupsQuery, [groupWithIds.stockGroups, userId]);
+      
+      fullStockGroups = stockGroupsResult.rows.map((sgRow: any) => {
+        let stocks = [];
+        try {
+          stocks = sgRow.stocks ? JSON.parse(sgRow.stocks) : [];
+          if (!Array.isArray(stocks)) stocks = [];
+        } catch (e) {
+          stocks = [];
+        }
+        
+        return {
+          id: sgRow.id,
+          userId: sgRow.user_id,
+          name: sgRow.name,
+          description: sgRow.description,
+          color: sgRow.color,
+          stocks: stocks.filter((s: string) => s && typeof s === 'string'),
+          createdAt: sgRow.created_at,
+          updatedAt: sgRow.updated_at
+        };
+      });
+    }
+    
+    return {
+      ...groupWithIds,
+      stockGroups: fullStockGroups
+    };
   }
 
   static async update(constraintId: string, userId: string, updates: Partial<ConstraintGroup>): Promise<ConstraintGroup | null> {
@@ -318,7 +416,7 @@ export class ConstraintGroupModel {
     return (result.rowCount ?? 0) > 0;
   }
 
-  private static mapRowToConstraintGroup(row: any): ConstraintGroup {
+  private static mapRowToConstraintGroup(row: any): ConstraintGroupWithIds {
     return {
       id: row.id,
       userId: row.user_id,

@@ -6,9 +6,9 @@ import path from 'path';
 dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config({ path: path.join(__dirname, '../../../.env'), override: false });
 
-// Override DATABASE_URL if it's still pointing to localhost
+// Only override DATABASE_URL if it's pointing to localhost (keep the env file value otherwise)
 if (process.env.DATABASE_URL?.includes('localhost')) {
-  process.env.DATABASE_URL = 'postgresql://test_ndo2_user:vAOUnFxDqVJxnNQLVuXGMaQhdABHqQqV@dpg-d358vt33fgac73b8tv5g-a.singapore-postgres.render.com/test_ndo2';
+  console.log('⚠️  DATABASE_URL is pointing to localhost, but no override needed - using external database from env');
 }
 
 // PostgreSQL connection pool
@@ -16,7 +16,7 @@ export const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 10000, // Increased timeout
     ssl: process.env.NODE_ENV === 'production' || process.env.DATABASE_URL?.includes('render.com')
         ? { rejectUnauthorized: false }
         : false,
@@ -98,10 +98,8 @@ export const memoryCache = new MemoryCache();
 // Initialize database connections
 export const initializeDatabase = async (): Promise<void> => {
     try {
-        // Debug: Log the DATABASE_URL (without showing the full URL for security)
-        const dbUrl = process.env.DATABASE_URL;
-        console.log('🔗 Database URL loaded:', dbUrl ? 'Yes' : 'No');
-        console.log('🌐 Using external database:', dbUrl?.includes('render.com') ? 'Yes' : 'No');
+
+        console.log('🌐 Using external database:', process.env.DATABASE_URL?.includes('render.com') ? 'Yes' : 'No');
         
         // Test PostgreSQL connection
         const client = await pool.connect();

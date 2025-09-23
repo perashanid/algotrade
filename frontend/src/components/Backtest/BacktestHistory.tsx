@@ -102,13 +102,12 @@ const BacktestHistory: React.FC = () => {
 
   const handleViewResults = (backtestId: string) => {
     // In a real app, this would navigate to the detailed results
-    console.log('View results for backtest:', backtestId);
+    // TODO: Navigate to detailed results page
   };
 
   const handleDeleteBacktest = (backtestId: string, constraintName: string) => {
     if (window.confirm(`Are you sure you want to delete the backtest for "${constraintName}"?`)) {
-      // In a real app, this would delete the backtest
-      console.log('Delete backtest:', backtestId);
+      // TODO: Implement backtest deletion
     }
   };
 

@@ -3,7 +3,9 @@ require('dotenv').config();
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL?.includes('render.com') ? { rejectUnauthorized: false } : false,
+    ssl: process.env.NODE_ENV === 'production' || process.env.DATABASE_URL?.includes('render.com')
+        ? { rejectUnauthorized: false }
+        : false,
 });
 
 async function testConnection() {
@@ -12,32 +14,25 @@ async function testConnection() {
         console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
         
         const client = await pool.connect();
-        console.log('✅ Database connected successfully!');
+        console.log('✅ Connected to database successfully');
         
-        // Test a simple query
-        const result = await client.query('SELECT NOW()');
-        console.log('✅ Query test successful:', result.rows[0]);
+        // Test if tables exist
+        const tables = ['constraint_groups', 'stock_groups', 'constraint_stocks', 'stock_group_members'];
         
-        // Check if our tables exist
-        const tablesResult = await client.query(`
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            ORDER BY table_name
-        `);
-        
-        console.log('📋 Existing tables:');
-        tablesResult.rows.forEach(row => {
-            console.log('  -', row.table_name);
-        });
+        for (const table of tables) {
+            try {
+                const result = await client.query(`SELECT COUNT(*) FROM ${table}`);
+                console.log(`✅ Table ${table} exists with ${result.rows[0].count} rows`);
+            } catch (error) {
+                console.log(`❌ Table ${table} does not exist or has issues:`, error.message);
+            }
+        }
         
         client.release();
         await pool.end();
-        
     } catch (error) {
         console.error('❌ Database connection failed:', error.message);
         console.error('Full error:', error);
-        process.exit(1);
     }
 }
 

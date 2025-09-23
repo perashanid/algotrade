@@ -29,7 +29,6 @@ const StockSearchInput: React.FC<StockSearchInputProps> = ({
   }, [searchTerm]);
 
   const handleStockSelect = (stock: string) => {
-    console.log('Stock selected:', stock); // Debug log
     onStockSelect(stock);
     setSearchTerm('');
     setShowDropdown(false);
