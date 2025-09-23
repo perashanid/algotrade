@@ -1,0 +1,37 @@
+# Copy and paste these environment variables into Vercel Dashboard
+# Go to: Vercel Dashboard → Your Project → Settings → Environment Variables
+
+# Database Configuration
+DATABASE_URL=postgresql://db_2_02we_user:woRpXf5TGeGbsk9Ma9r98rI2V7KktsE4@dpg-d39cdes9c44c73aq4lr0-a.oregon-postgres.render.com/db_2_02we
+POSTGRES_USER=db_2_02we_user
+POSTGRES_PASSWORD=woRpXf5TGeGbsk9Ma9r98rI2V7KktsE4
+POSTGRES_DB=db_2_02we
+
+# JWT Configuration
+JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+JWT_EXPIRES_IN=7d
+
+# Finnhub API Configuration
+FINNHUB_API_KEY=d38ob89r01qthpo0o510d38ob89r01qthpo0o51g
+FINNHUB_BASE_URL=https://finnhub.io/api/v1
+
+# Server Configuration
+PORT=3001
+NODE_ENV=production
+
+# CORS Configuration - Replace with your actual Vercel URL
+FRONTEND_URL=https://YOUR_VERCEL_URL
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# IMPORTANT: For each variable above:
+# 1. Name: Enter the variable name (e.g., DATABASE_URL)
+# 2. Value: Enter the variable value (e.g., postgresql://...)
+# 3. Environment: Select "Production" (and "Preview" if you want)
+# 4. Click "Add"
+
+# SECURITY NOTE: 
+# Change JWT_SECRET to a strong, unique secret for production!
+# Generate a new one at: https://generate-secret.vercel.app/32

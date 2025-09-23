@@ -2,8 +2,16 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Simple test function first
 export default async (req: VercelRequest, res: VercelResponse) => {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Set CORS headers - Update with your actual Vercel URL
+  const allowedOrigins = process.env.NODE_ENV === 'production' 
+    ? ['https://YOUR_VERCEL_URL'] // Replace YOUR_VERCEL_URL with your actual Vercel URL
+    : ['http://localhost:3000', 'http://localhost:5173'];
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin as string)) {
+    res.setHeader('Access-Control-Allow-Origin', origin as string);
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
