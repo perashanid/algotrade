@@ -39,11 +39,36 @@ app.use(helmet({
   },
 }));
 
-// CORS configuration for Vercel
+// CORS configuration for Vercel - Allow all Vercel deployments
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://algotrade-flax.vercel.app', process.env.FRONTEND_URL || 'https://algotrade-flax.vercel.app'] // Allow your actual domain
-    : ['http://localhost:3000'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (process.env.NODE_ENV === 'production') {
+      // Allow all Vercel deployments for this project
+      if (origin.includes('algotrade') && origin.includes('vercel.app')) {
+        return callback(null, true);
+      }
+      // Also allow specific domains
+      const allowedOrigins = [
+        'https://algotrade-flax.vercel.app',
+        process.env.FRONTEND_URL
+      ].filter(Boolean);
+      
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      return callback(new Error('Not allowed by CORS'));
+    } else {
+      // Development - allow localhost
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
