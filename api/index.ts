@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
+  try {
   // Automatic CORS handling - no manual configuration needed!
   const origin = req.headers.origin;
   const host = req.headers.host;
@@ -27,8 +28,12 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // Get the path from the request URL
+  const path = req.url || '';
+  console.log('API Request:', { method: req.method, path, headers: req.headers });
+
   // Health check
-  if (req.url === '/api/health') {
+  if (path === '/api/health' || path === '/health') {
     res.status(200).json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -37,10 +42,107 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // Default response
+  // Auth routes
+  if (path.includes('/auth/')) {
+    if ((path === '/api/auth/login' || path === '/auth/login') && req.method === 'POST') {
+      res.status(200).json({
+        success: true,
+        message: 'Login endpoint working',
+        data: { 
+          note: 'This is a placeholder. Connect to your database for full functionality.',
+          token: 'demo-token',
+          user: { id: '1', email: 'demo@example.com' }
+        }
+      });
+      return;
+    }
+
+    if ((path === '/api/auth/register' || path === '/auth/register') && req.method === 'POST') {
+      res.status(200).json({
+        success: true,
+        message: 'Register endpoint working',
+        data: { 
+          note: 'This is a placeholder. Connect to your database for full functionality.',
+          token: 'demo-token',
+          user: { id: '1', email: 'demo@example.com' }
+        }
+      });
+      return;
+    }
+  }
+
+  // Portfolio routes
+  if (path.includes('/portfolio')) {
+    res.status(200).json({
+      success: true,
+      message: 'Portfolio API working',
+      data: { 
+        note: 'This is a placeholder. Connect to your database for full functionality.',
+        portfolio: {
+          totalValue: 10000,
+          totalGainLoss: 500,
+          totalGainLossPercent: 5.0,
+          positions: []
+        }
+      }
+    });
+    return;
+  }
+
+  // Constraints routes
+  if (path.includes('/constraints')) {
+    res.status(200).json({
+      success: true,
+      message: 'Constraints API working',
+      data: { 
+        note: 'This is a placeholder. Connect to your database for full functionality.',
+        constraints: []
+      }
+    });
+    return;
+  }
+
+  // Market data routes
+  if (path.includes('/market')) {
+    res.status(200).json({
+      success: true,
+      message: 'Market data API working',
+      data: { 
+        note: 'This is a placeholder. Connect to your database for full functionality.',
+        marketData: {}
+      }
+    });
+    return;
+  }
+
+  // Default response for unmatched routes
   res.status(404).json({
-    error: 'API endpoint not found',
-    path: req.url,
-    method: req.method
+    success: false,
+    error: {
+      code: 'ENDPOINT_NOT_FOUND',
+      message: `Endpoint not found: ${req.method} ${path}`,
+      availableEndpoints: [
+        'GET /api/health',
+        'POST /api/auth/login',
+        'POST /api/auth/register',
+        'GET /api/portfolio',
+        'GET /api/constraints',
+        'GET /api/market'
+      ]
+    },
+    timestamp: new Date().toISOString()
   });
+
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected error occurred',
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      },
+      timestamp: new Date().toISOString()
+    });
+  }
 }
