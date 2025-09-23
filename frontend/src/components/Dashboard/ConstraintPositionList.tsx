@@ -3,34 +3,30 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Target, DollarSign, Activity, Plus, Edit, Save, X, ChevronDown, ChevronRight, Search, Trash2, Tag, Power, PowerOff, UserPlus, UserMinus } from 'lucide-react';
 import { constraintPositionsService } from '../../services/constraintPositions';
 import { constraintGroupsService } from '../../services/constraintGroups';
-import { ConstraintPosition, ConstraintGroup } from '../../types';
+import { ConstraintPosition, ConstraintGroup, GroupDisplayData, StockTriggers, GroupUIState } from '../../types';
 import { getStockInfo } from '../../data/stockDatabase';
 import StockSearchInput from '../Common/StockSearchInput';
 import toast from 'react-hot-toast';
 
 const ConstraintPositionList: React.FC = () => {
-  const [constraintGroups, setConstraintGroups] = useState<ConstraintGroup[]>([]);
-  const [positions, setPositions] = useState<ConstraintPosition[]>([]);
+  const [groupDisplayData, setGroupDisplayData] = useState<GroupDisplayData[]>([]);
   const [individualConstraints, setIndividualConstraints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [editingGroup, setEditingGroup] = useState<string | null>(null);
-  const [editingStock, setEditingStock] = useState<string | null>(null);
-  const [editingIndividual, setEditingIndividual] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [addingStockToGroup, setAddingStockToGroup] = useState<string | null>(null);
   const [newStockSymbol, setNewStockSymbol] = useState('');
-  const [editValues, setEditValues] = useState<{
-    buyAmount: number;
-    sellAmount: number;
-    buyTriggerPercent: number;
-    sellTriggerPercent: number;
-    profitTriggerPercent?: number;
-  }>({
-    buyAmount: 0,
-    sellAmount: 0,
-    buyTriggerPercent: 0,
-    sellTriggerPercent: 0
+  
+  // UI State management
+  const [uiState, setUIState] = useState<GroupUIState>({
+    expandedGroups: new Set(),
+    editingGroup: null,
+    editingStock: null,
+    addingStockToGroup: null,
+    editValues: {
+      buyAmount: 0,
+      sellAmount: 0,
+      buyTriggerPercent: 0,
+      sellTriggerPercent: 0
+    }
   });
 
   useEffect(() => {
@@ -41,20 +37,20 @@ const ConstraintPositionList: React.FC = () => {
     try {
       setLoading(true);
       const { constraintsService } = await import('../../services/constraints');
-      const [groupsData, positionsData, individualConstraintsData] = await Promise.all([
-        constraintGroupsService.getConstraintGroups(),
-        constraintPositionsService.getConstraintPositions(),
+      const [groupsData, individualConstraintsData] = await Promise.all([
+        constraintPositionsService.getGroupDisplayData(),
         constraintsService.getConstraints()
       ]);
-      setConstraintGroups(groupsData);
-      setPositions(positionsData);
+      
+      setGroupDisplayData(groupsData);
       setIndividualConstraints(individualConstraintsData);
 
-
-
       // Expand all groups by default
-      const allGroupIds = new Set(groupsData.map(group => group.id));
-      setExpandedGroups(allGroupIds);
+      const allGroupIds = new Set(groupsData.map(group => group.group.id));
+      setUIState(prev => ({
+        ...prev,
+        expandedGroups: allGroupIds
+      }));
     } catch (error) {
       toast.error('Failed to load constraint data');
       console.error('Error loading data:', error);
@@ -64,79 +60,87 @@ const ConstraintPositionList: React.FC = () => {
   };
 
   const toggleGroupExpansion = (groupId: string) => {
-    setExpandedGroups(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(groupId)) {
-        newSet.delete(groupId);
+    setUIState(prev => {
+      const newExpandedGroups = new Set(prev.expandedGroups);
+      if (newExpandedGroups.has(groupId)) {
+        newExpandedGroups.delete(groupId);
       } else {
-        newSet.add(groupId);
+        newExpandedGroups.add(groupId);
       }
-      return newSet;
+      return {
+        ...prev,
+        expandedGroups: newExpandedGroups
+      };
     });
   };
 
   const handleEditGroup = (group: ConstraintGroup) => {
-    setEditingGroup(group.id);
-    setEditValues({
-      buyTriggerPercent: group.buyTriggerPercent,
-      sellTriggerPercent: group.sellTriggerPercent,
-      profitTriggerPercent: group.profitTriggerPercent,
-      buyAmount: group.buyAmount,
-      sellAmount: group.sellAmount
-    });
+    setUIState(prev => ({
+      ...prev,
+      editingGroup: group.id,
+      editValues: {
+        buyTriggerPercent: group.buyTriggerPercent,
+        sellTriggerPercent: group.sellTriggerPercent,
+        profitTriggerPercent: group.profitTriggerPercent,
+        buyAmount: group.buyAmount,
+        sellAmount: group.sellAmount
+      }
+    }));
   };
 
-  const handleEditStock = (groupId: string, stock: string, group: ConstraintGroup) => {
-    setEditingStock(`${groupId}-${stock}`);
-
-    // Check if this stock has individual overrides, otherwise use group defaults
-    const stockOverride = group.stockOverrides?.[stock];
-    setEditValues({
-      buyTriggerPercent: stockOverride?.buyTriggerPercent ?? group.buyTriggerPercent,
-      sellTriggerPercent: stockOverride?.sellTriggerPercent ?? group.sellTriggerPercent,
-      profitTriggerPercent: stockOverride?.profitTriggerPercent ?? group.profitTriggerPercent,
-      buyAmount: stockOverride?.buyAmount ?? group.buyAmount,
-      sellAmount: stockOverride?.sellAmount ?? group.sellAmount
-    });
+  const handleEditStock = (groupId: string, stockSymbol: string, group: ConstraintGroup) => {
+    // Get effective triggers for this stock
+    const effectiveTriggers = constraintPositionsService.getEffectiveTriggers(group, stockSymbol);
+    
+    setUIState(prev => ({
+      ...prev,
+      editingStock: `${groupId}-${stockSymbol}`,
+      editValues: effectiveTriggers
+    }));
   };
+
+  const [editingIndividual, setEditingIndividual] = useState<string | null>(null);
 
   const handleEditIndividual = (constraint: any) => {
     setEditingIndividual(constraint.id);
-    setEditValues({
-      buyTriggerPercent: constraint.buyTriggerPercent,
-      sellTriggerPercent: constraint.sellTriggerPercent,
-      profitTriggerPercent: constraint.profitTriggerPercent,
-      buyAmount: constraint.buyAmount,
-      sellAmount: constraint.sellAmount
-    });
+    setUIState(prev => ({
+      ...prev,
+      editValues: {
+        buyTriggerPercent: constraint.buyTriggerPercent,
+        sellTriggerPercent: constraint.sellTriggerPercent,
+        profitTriggerPercent: constraint.profitTriggerPercent,
+        buyAmount: constraint.buyAmount,
+        sellAmount: constraint.sellAmount
+      }
+    }));
   };
 
   const handleSaveEdit = async () => {
     try {
-      if (editingGroup) {
-        await constraintGroupsService.updateConstraintGroup(editingGroup, editValues);
+      if (uiState.editingGroup) {
+        await constraintGroupsService.updateConstraintGroup(uiState.editingGroup, uiState.editValues);
         toast.success('Constraint group updated successfully!');
-        setEditingGroup(null);
+        setUIState(prev => ({ ...prev, editingGroup: null }));
         await loadData();
-      } else if (editingStock) {
+      } else if (uiState.editingStock) {
         // For individual stock editing, update the stock's individual constraints within the group
-        const [groupId, stockSymbol] = editingStock.split('-');
+        const [groupId, stockSymbol] = uiState.editingStock.split('-');
 
         await constraintGroupsService.updateStockConstraint(groupId, stockSymbol, {
-          buyTriggerPercent: editValues.buyTriggerPercent,
-          sellTriggerPercent: editValues.sellTriggerPercent,
-          profitTriggerPercent: editValues.profitTriggerPercent,
-          buyAmount: editValues.buyAmount,
-          sellAmount: editValues.sellAmount
+          buyTriggerPercent: uiState.editValues.buyTriggerPercent,
+          sellTriggerPercent: uiState.editValues.sellTriggerPercent,
+          profitTriggerPercent: uiState.editValues.profitTriggerPercent,
+          buyAmount: uiState.editValues.buyAmount,
+          sellAmount: uiState.editValues.sellAmount
         });
 
         toast.success(`${stockSymbol} constraints updated successfully!`);
-        setEditingStock(null);
+        setUIState(prev => ({ ...prev, editingStock: null }));
         await loadData();
       } else if (editingIndividual) {
         // For individual constraint editing
         const { constraintsService } = await import('../../services/constraints');
-        await constraintsService.updateConstraint(editingIndividual, editValues);
+        await constraintsService.updateConstraint(editingIndividual, uiState.editValues);
         toast.success('Individual constraint updated successfully!');
         setEditingIndividual(null);
         await loadData();
@@ -147,15 +151,26 @@ const ConstraintPositionList: React.FC = () => {
   };
 
   const handleCancelEdit = () => {
-    setEditingGroup(null);
-    setEditingStock(null);
+    setUIState(prev => ({
+      ...prev,
+      editingGroup: null,
+      editingStock: null,
+      editValues: {
+        buyAmount: 0,
+        sellAmount: 0,
+        buyTriggerPercent: 0,
+        sellTriggerPercent: 0
+      }
+    }));
     setEditingIndividual(null);
-    setEditValues({
-      buyAmount: 0,
-      sellAmount: 0,
-      buyTriggerPercent: 0,
-      sellTriggerPercent: 0
-    });
+  };
+
+  // Helper function to update edit values
+  const updateEditValues = (updates: Partial<StockTriggers>) => {
+    setUIState(prev => ({
+      ...prev,
+      editValues: { ...prev.editValues, ...updates }
+    }));
   };
 
   const handleToggleConstraintGroup = async (groupId: string, isActive: boolean) => {
@@ -213,7 +228,7 @@ const ConstraintPositionList: React.FC = () => {
     try {
       await constraintGroupsService.addStockToGroup(groupId, stockSymbol.trim());
       toast.success(`${stockSymbol} added to group successfully!`);
-      setAddingStockToGroup(null);
+      setUIState(prev => ({ ...prev, addingStockToGroup: null }));
       setNewStockSymbol('');
       await loadData();
     } catch (error) {
@@ -246,26 +261,28 @@ const ConstraintPositionList: React.FC = () => {
     return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
   };
 
-  const positionCount = positions.filter(p => p.status === 'position').length;
-  const totalConstraints = constraintGroups.length + individualConstraints.length;
-  const totalValue = positions.reduce((sum, p) => sum + p.marketValue, 0);
-  const totalStocks = constraintGroups.reduce((sum, group) => sum + group.stocks.length, 0) + individualConstraints.length;
+  // Calculate summary statistics from group display data
+  const positionCount = groupDisplayData.reduce((sum, group) => sum + group.activePositions, 0) + 
+                       individualConstraints.filter(c => c.isActive).length;
+  const totalConstraints = groupDisplayData.length + individualConstraints.length;
+  const totalValue = groupDisplayData.reduce((sum, group) => sum + group.totalValue, 0);
+  const totalStocks = groupDisplayData.reduce((sum, group) => sum + group.stocks.length, 0) + individualConstraints.length;
 
-  // Filter constraints based on search term
-  const filteredConstraintGroups = constraintGroups.filter(group => {
+  // Filter constraint groups based on search term
+  const filteredGroupDisplayData = groupDisplayData.filter(groupData => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
-      group.name.toLowerCase().includes(searchLower) ||
-      group.stocks.some(stock => stock.toLowerCase().includes(searchLower))
+      groupData.group.name.toLowerCase().includes(searchLower) ||
+      groupData.stocks.some(stock => stock.symbol.toLowerCase().includes(searchLower))
     );
   });
 
-  // Get all stocks that match search term
-  const getMatchingStocks = (group: ConstraintGroup) => {
-    if (!searchTerm) return group.stocks;
-    return group.stocks.filter(stock =>
-      stock.toLowerCase().includes(searchTerm.toLowerCase())
+  // Get stocks that match search term for a group
+  const getMatchingStocks = (groupData: GroupDisplayData) => {
+    if (!searchTerm) return groupData.stocks;
+    return groupData.stocks.filter(stock =>
+      stock.symbol.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
 
@@ -288,7 +305,7 @@ const ConstraintPositionList: React.FC = () => {
     );
   }
 
-  if (constraintGroups.length === 0 && individualConstraints.length === 0) {
+  if (groupDisplayData.length === 0 && individualConstraints.length === 0) {
     return (
       <div className="card">
         <div className="text-center py-8">
@@ -364,37 +381,40 @@ const ConstraintPositionList: React.FC = () => {
 
       {/* Constraint Groups List */}
       <div className="space-y-3">
-        {filteredConstraintGroups.map((group) => (
-          <div key={group.id} className="card border border-blue-200 dark:border-blue-800">
+        {filteredGroupDisplayData.map((groupData) => (
+          <div key={groupData.group.id} className="card border border-blue-200 dark:border-blue-800">
             {/* Group Header */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
                   <button
-                    onClick={() => toggleGroupExpansion(group.id)}
+                    onClick={() => toggleGroupExpansion(groupData.group.id)}
                     className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                   >
-                    {expandedGroups.has(group.id) ? (
+                    {uiState.expandedGroups.has(groupData.group.id) ? (
                       <ChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                     ) : (
                       <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                     )}
                   </button>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{group.name}</h3>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${group.isActive
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{groupData.group.name}</h3>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${groupData.group.isActive
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                     }`}>
-                    {group.isActive ? 'Active' : 'Inactive'}
+                    {groupData.group.isActive ? 'Active' : 'Inactive'}
                   </span>
                   <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full">
-                    {group.stocks.length} stocks
+                    {groupData.stocks.length} stocks
+                  </span>
+                  <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">
+                    {groupData.activePositions} positions
                   </span>
                 </div>
 
                 {/* Group Constraints Summary */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {editingGroup === group.id ? (
+                  {uiState.editingGroup === groupData.group.id ? (
                     <>
                       {/* Editable Buy Trigger */}
                       <div className="flex items-center gap-2">
@@ -406,8 +426,8 @@ const ConstraintPositionList: React.FC = () => {
                           <div className="flex items-center gap-1">
                             <input
                               type="number"
-                              value={editValues.buyTriggerPercent}
-                              onChange={(e) => setEditValues(prev => ({ ...prev, buyTriggerPercent: parseFloat(e.target.value) }))}
+                              value={uiState.editValues.buyTriggerPercent}
+                              onChange={(e) => updateEditValues({ buyTriggerPercent: parseFloat(e.target.value) })}
                               className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                               step="0.1"
                             />
@@ -417,8 +437,8 @@ const ConstraintPositionList: React.FC = () => {
                             <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
                             <input
                               type="number"
-                              value={editValues.buyAmount}
-                              onChange={(e) => setEditValues(prev => ({ ...prev, buyAmount: parseFloat(e.target.value) }))}
+                              value={uiState.editValues.buyAmount}
+                              onChange={(e) => updateEditValues({ buyAmount: parseFloat(e.target.value) })}
                               className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                               step="100"
                             />
@@ -436,8 +456,8 @@ const ConstraintPositionList: React.FC = () => {
                           <div className="flex items-center gap-1">
                             <input
                               type="number"
-                              value={editValues.sellTriggerPercent}
-                              onChange={(e) => setEditValues(prev => ({ ...prev, sellTriggerPercent: parseFloat(e.target.value) }))}
+                              value={uiState.editValues.sellTriggerPercent}
+                              onChange={(e) => updateEditValues({ sellTriggerPercent: parseFloat(e.target.value) })}
                               className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                               step="0.1"
                             />
@@ -447,8 +467,8 @@ const ConstraintPositionList: React.FC = () => {
                             <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
                             <input
                               type="number"
-                              value={editValues.sellAmount}
-                              onChange={(e) => setEditValues(prev => ({ ...prev, sellAmount: parseFloat(e.target.value) }))}
+                              value={uiState.editValues.sellAmount}
+                              onChange={(e) => updateEditValues({ sellAmount: parseFloat(e.target.value) })}
                               className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                               step="100"
                             />
@@ -466,8 +486,8 @@ const ConstraintPositionList: React.FC = () => {
                           <div className="flex items-center gap-1">
                             <input
                               type="number"
-                              value={editValues.profitTriggerPercent || ''}
-                              onChange={(e) => setEditValues(prev => ({ ...prev, profitTriggerPercent: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                              value={uiState.editValues.profitTriggerPercent || ''}
+                              onChange={(e) => updateEditValues({ profitTriggerPercent: e.target.value ? parseFloat(e.target.value) : undefined })}
                               className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                               step="0.1"
                               placeholder="15"
@@ -487,7 +507,7 @@ const ConstraintPositionList: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-600 dark:text-gray-300">Buy Trigger</p>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            {formatPercent(group.buyTriggerPercent)} ({formatCurrency(group.buyAmount)})
+                            {formatPercent(groupData.group.buyTriggerPercent)} ({formatCurrency(groupData.group.buyAmount)})
                           </p>
                         </div>
                       </div>
@@ -499,12 +519,12 @@ const ConstraintPositionList: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-600 dark:text-gray-300">Sell Trigger</p>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            {formatPercent(group.sellTriggerPercent)} ({formatCurrency(group.sellAmount)})
+                            {formatPercent(groupData.group.sellTriggerPercent)} ({formatCurrency(groupData.group.sellAmount)})
                           </p>
                         </div>
                       </div>
 
-                      {group.profitTriggerPercent && (
+                      {groupData.group.profitTriggerPercent && (
                         <div className="flex items-center gap-2">
                           <div className="p-2 bg-blue-100 rounded-lg">
                             <Target className="h-4 w-4 text-blue-600" />
@@ -512,7 +532,7 @@ const ConstraintPositionList: React.FC = () => {
                           <div>
                             <p className="text-sm text-gray-600 dark:text-gray-300">Profit Target</p>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {formatPercent(group.profitTriggerPercent)}
+                              {formatPercent(groupData.group.profitTriggerPercent)}
                             </p>
                           </div>
                         </div>
@@ -524,7 +544,7 @@ const ConstraintPositionList: React.FC = () => {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2 ml-4">
-                {editingGroup === group.id ? (
+                {uiState.editingGroup === groupData.group.id ? (
                   <>
                     <button
                       onClick={handleSaveEdit}
@@ -544,24 +564,24 @@ const ConstraintPositionList: React.FC = () => {
                 ) : (
                   <>
                     <button
-                      onClick={() => handleEditGroup(group)}
+                      onClick={() => handleEditGroup(groupData.group)}
                       className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                       title="Edit group constraints"
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => handleToggleConstraintGroup(group.id, group.isActive)}
-                      className={`p-2 rounded-lg transition-colors ${group.isActive
+                      onClick={() => handleToggleConstraintGroup(groupData.group.id, groupData.group.isActive)}
+                      className={`p-2 rounded-lg transition-colors ${groupData.group.isActive
                         ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50'
                         : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
                         }`}
-                      title={group.isActive ? 'Deactivate constraint group' : 'Activate constraint group'}
+                      title={groupData.group.isActive ? 'Deactivate constraint group' : 'Activate constraint group'}
                     >
-                      {group.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                      {groupData.group.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
                     </button>
                     <button
-                      onClick={() => handleDeleteConstraintGroup(group.id, group.name)}
+                      onClick={() => handleDeleteConstraintGroup(groupData.group.id, groupData.group.name)}
                       className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                       title="Delete constraint group"
                     >
@@ -573,14 +593,14 @@ const ConstraintPositionList: React.FC = () => {
             </div>
 
             {/* Expanded Stocks Section */}
-            {expandedGroups.has(group.id) && (
+            {uiState.expandedGroups.has(groupData.group.id) && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Stocks in this group ({group.stocks.length}):
+                    Stocks in this group ({groupData.stocks.length}):
                   </h4>
                   <button
-                    onClick={() => setAddingStockToGroup(group.id)}
+                    onClick={() => setUIState(prev => ({ ...prev, addingStockToGroup: groupData.group.id }))}
                     className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                     title="Add stock to group"
                   >
@@ -590,7 +610,7 @@ const ConstraintPositionList: React.FC = () => {
                 </div>
 
                 {/* Add Stock Form */}
-                {addingStockToGroup === group.id && (
+                {uiState.addingStockToGroup === groupData.group.id && (
                   <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <div className="flex items-center gap-2">
                       <div className="flex-1">
@@ -608,7 +628,7 @@ const ConstraintPositionList: React.FC = () => {
                         />
                       </div>
                       <button
-                        onClick={() => handleAddStockToGroup(group.id, newStockSymbol)}
+                        onClick={() => handleAddStockToGroup(groupData.group.id, newStockSymbol)}
                         disabled={!newStockSymbol.trim()}
                         className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-sm"
                       >
@@ -616,7 +636,7 @@ const ConstraintPositionList: React.FC = () => {
                       </button>
                       <button
                         onClick={() => {
-                          setAddingStockToGroup(null);
+                          setUIState(prev => ({ ...prev, addingStockToGroup: null }));
                           setNewStockSymbol('');
                         }}
                         className="px-3 py-1 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-700 text-sm"
@@ -627,81 +647,127 @@ const ConstraintPositionList: React.FC = () => {
                   </div>
                 )}
 
-                {/* Individual Stocks with Detailed Constraints */}
+                {/* Individual Stocks with Enhanced Display */}
                 <div className="space-y-3">
-
-
-                  {group.stocks.length === 0 ? (
+                  {groupData.stocks.length === 0 ? (
                     <div className="text-center py-4 text-gray-500 dark:text-gray-400">
                       No stocks in this group yet. Click "Add Stock" to add some.
                     </div>
                   ) : (
-                    getMatchingStocks(group).map((stock) => {
-                      const stockInfo = getStockInfo(stock);
-                      const override = group.stockOverrides?.[stock];
-                      const buyTrigger = override?.buyTriggerPercent ?? group.buyTriggerPercent;
-                      const sellTrigger = override?.sellTriggerPercent ?? group.sellTriggerPercent;
-                      const profitTrigger = override?.profitTriggerPercent ?? group.profitTriggerPercent;
-                      const buyAmount = override?.buyAmount ?? group.buyAmount;
-                      const sellAmount = override?.sellAmount ?? group.sellAmount;
+                    getMatchingStocks(groupData).map((stockData) => {
+                      const stockInfo = getStockInfo(stockData.symbol);
+                      const isEditing = uiState.editingStock === `${groupData.group.id}-${stockData.symbol}`;
+                      
+                      // Determine status color and icon
+                      const getStatusDisplay = (status: string) => {
+                        switch (status) {
+                          case 'position':
+                            return { color: 'text-green-600 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/30', text: 'Position' };
+                          case 'triggered':
+                            return { color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'Triggered' };
+                          default:
+                            return { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'Watching' };
+                        }
+                      };
+                      
+                      const statusDisplay = getStatusDisplay(stockData.status);
 
                       return (
-                        <div key={stock} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div key={stockData.symbol} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col flex-1">
+                              {/* Stock Header */}
                               <div className="flex items-center gap-3 mb-2">
                                 <span className="font-semibold text-gray-900 dark:text-white text-lg">
-                                  {stock}
+                                  {stockData.symbol}
                                 </span>
-                                {override ? (
+                                
+                                {/* Status Badge */}
+                                <span className={`text-xs px-2 py-1 rounded ${statusDisplay.bg} ${statusDisplay.color}`}>
+                                  {statusDisplay.text}
+                                </span>
+                                
+                                {/* Custom Triggers Indicator */}
+                                {stockData.isCustomTriggers ? (
                                   <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-2 py-1 rounded">
-                                    Custom Constraints
+                                    Custom Triggers
                                   </span>
                                 ) : (
                                   <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
-                                    Group Constraints
+                                    Group Default
                                   </span>
                                 )}
                               </div>
 
+                              {/* Company Name */}
                               {stockInfo && (
                                 <span className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                                   {stockInfo.name}
                                 </span>
                               )}
 
-                              {/* Always show trigger values prominently */}
+                              {/* Current Price and Position Info */}
+                              <div className="flex items-center gap-4 mb-3">
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                    ${stockData.currentPrice.toFixed(2)}
+                                  </span>
+                                </div>
+                                
+                                {stockData.position && stockData.position.quantity > 0 && (
+                                  <>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                                        Qty: {stockData.position.quantity}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                                        Value: {formatCurrency(stockData.marketValue)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <span className={`text-sm font-medium ${stockData.unrealizedPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {formatPercent(stockData.unrealizedPnlPercent)}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Trigger Values Display */}
                               <div className="flex items-center gap-4 mb-3">
                                 <div className="flex items-center gap-1">
                                   <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
                                   <span className="text-sm font-medium text-red-600 dark:text-red-400">
-                                    Buy: {formatPercent(buyTrigger)}
+                                    Buy: {formatPercent(stockData.triggers.buyTriggerPercent)}
                                   </span>
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    ({formatCurrency(buyAmount)})
+                                    ({formatCurrency(stockData.triggers.buyAmount)})
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
                                   <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                                    Sell: {formatPercent(sellTrigger)}
+                                    Sell: {formatPercent(stockData.triggers.sellTriggerPercent)}
                                   </span>
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    ({formatCurrency(sellAmount)})
+                                    ({formatCurrency(stockData.triggers.sellAmount)})
                                   </span>
                                 </div>
-                                {profitTrigger && (
+                                {stockData.triggers.profitTriggerPercent && (
                                   <div className="flex items-center gap-1">
                                     <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                     <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                      Profit: {formatPercent(profitTrigger)}
+                                      Profit: {formatPercent(stockData.triggers.profitTriggerPercent)}
                                     </span>
                                   </div>
                                 )}
                               </div>
 
-                              {/* Detailed Constraint Information */}
-                              {editingStock === `${group.id}-${stock}` ? (
+                              {/* Inline Editing Section */}
+                              {isEditing && (
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                                   {/* Editable Buy Trigger */}
                                   <div className="flex items-center gap-2">
@@ -713,8 +779,8 @@ const ConstraintPositionList: React.FC = () => {
                                       <div className="flex items-center gap-1">
                                         <input
                                           type="number"
-                                          value={editValues.buyTriggerPercent}
-                                          onChange={(e) => setEditValues(prev => ({ ...prev, buyTriggerPercent: parseFloat(e.target.value) }))}
+                                          value={uiState.editValues.buyTriggerPercent}
+                                          onChange={(e) => updateEditValues({ buyTriggerPercent: parseFloat(e.target.value) })}
                                           className="w-16 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                           step="0.1"
                                         />
@@ -724,8 +790,8 @@ const ConstraintPositionList: React.FC = () => {
                                         <DollarSign className="h-3 w-3 text-gray-400" />
                                         <input
                                           type="number"
-                                          value={editValues.buyAmount}
-                                          onChange={(e) => setEditValues(prev => ({ ...prev, buyAmount: parseFloat(e.target.value) }))}
+                                          value={uiState.editValues.buyAmount}
+                                          onChange={(e) => updateEditValues({ buyAmount: parseFloat(e.target.value) })}
                                           className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                           step="100"
                                         />
@@ -743,8 +809,8 @@ const ConstraintPositionList: React.FC = () => {
                                       <div className="flex items-center gap-1">
                                         <input
                                           type="number"
-                                          value={editValues.sellTriggerPercent}
-                                          onChange={(e) => setEditValues(prev => ({ ...prev, sellTriggerPercent: parseFloat(e.target.value) }))}
+                                          value={uiState.editValues.sellTriggerPercent}
+                                          onChange={(e) => updateEditValues({ sellTriggerPercent: parseFloat(e.target.value) })}
                                           className="w-16 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                           step="0.1"
                                         />
@@ -754,8 +820,8 @@ const ConstraintPositionList: React.FC = () => {
                                         <DollarSign className="h-3 w-3 text-gray-400" />
                                         <input
                                           type="number"
-                                          value={editValues.sellAmount}
-                                          onChange={(e) => setEditValues(prev => ({ ...prev, sellAmount: parseFloat(e.target.value) }))}
+                                          value={uiState.editValues.sellAmount}
+                                          onChange={(e) => updateEditValues({ sellAmount: parseFloat(e.target.value) })}
                                           className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                           step="100"
                                         />
@@ -773,8 +839,8 @@ const ConstraintPositionList: React.FC = () => {
                                       <div className="flex items-center gap-1">
                                         <input
                                           type="number"
-                                          value={editValues.profitTriggerPercent || ''}
-                                          onChange={(e) => setEditValues(prev => ({ ...prev, profitTriggerPercent: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                                          value={uiState.editValues.profitTriggerPercent || ''}
+                                          onChange={(e) => updateEditValues({ profitTriggerPercent: e.target.value ? parseFloat(e.target.value) : undefined })}
                                           className="w-16 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                           step="0.1"
                                           placeholder="15"
@@ -784,63 +850,12 @@ const ConstraintPositionList: React.FC = () => {
                                     </div>
                                   </div>
                                 </div>
-                              ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                  {/* Buy Trigger */}
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded">
-                                      <TrendingDown className="h-3 w-3 text-red-600 dark:text-red-400" />
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-600 dark:text-gray-400">Buy Trigger</p>
-                                      <p className="font-medium text-red-600 dark:text-red-400 text-sm">
-                                        {formatPercent(buyTrigger)}
-                                      </p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {formatCurrency(buyAmount)}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  {/* Sell Trigger */}
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded">
-                                      <TrendingUp className="h-3 w-3 text-green-600 dark:text-green-400" />
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-600 dark:text-gray-400">Sell Trigger</p>
-                                      <p className="font-medium text-green-600 dark:text-green-400 text-sm">
-                                        {formatPercent(sellTrigger)}
-                                      </p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {formatCurrency(sellAmount)}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  {/* Profit Target */}
-                                  {profitTrigger && (
-                                    <div className="flex items-center gap-2">
-                                      <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded">
-                                        <Target className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400">Profit Target</p>
-                                        <p className="font-medium text-blue-600 dark:text-blue-400 text-sm">
-                                          {formatPercent(profitTrigger)}
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                          {formatCurrency(sellAmount)}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
                               )}
                             </div>
 
+                            {/* Stock Action Buttons */}
                             <div className="flex items-center gap-1 ml-4">
-                              {editingStock === `${group.id}-${stock}` ? (
+                              {isEditing ? (
                                 <>
                                   <button
                                     onClick={handleSaveEdit}
@@ -860,14 +875,14 @@ const ConstraintPositionList: React.FC = () => {
                               ) : (
                                 <>
                                   <button
-                                    onClick={() => handleEditStock(group.id, stock, group)}
+                                    onClick={() => handleEditStock(groupData.group.id, stockData.symbol, groupData.group)}
                                     className="p-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                                     title="Edit individual constraints"
                                   >
                                     <Edit className="h-4 w-4" />
                                   </button>
                                   <button
-                                    onClick={() => handleRemoveStockFromGroup(group.id, stock)}
+                                    onClick={() => handleRemoveStockFromGroup(groupData.group.id, stockData.symbol)}
                                     className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                                     title="Remove stock from group"
                                   >
@@ -968,8 +983,8 @@ const ConstraintPositionList: React.FC = () => {
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="number"
-                                    value={editValues.buyTriggerPercent}
-                                    onChange={(e) => setEditValues(prev => ({ ...prev, buyTriggerPercent: parseFloat(e.target.value) }))}
+                                    value={uiState.editValues.buyTriggerPercent}
+                                    onChange={(e) => updateEditValues({ buyTriggerPercent: parseFloat(e.target.value) })}
                                     className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                     step="0.1"
                                   />
@@ -979,8 +994,8 @@ const ConstraintPositionList: React.FC = () => {
                                   <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
                                   <input
                                     type="number"
-                                    value={editValues.buyAmount}
-                                    onChange={(e) => setEditValues(prev => ({ ...prev, buyAmount: parseFloat(e.target.value) }))}
+                                    value={uiState.editValues.buyAmount}
+                                    onChange={(e) => updateEditValues({ buyAmount: parseFloat(e.target.value) })}
                                     className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                     step="100"
                                   />
@@ -998,8 +1013,8 @@ const ConstraintPositionList: React.FC = () => {
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="number"
-                                    value={editValues.sellTriggerPercent}
-                                    onChange={(e) => setEditValues(prev => ({ ...prev, sellTriggerPercent: parseFloat(e.target.value) }))}
+                                    value={uiState.editValues.sellTriggerPercent}
+                                    onChange={(e) => updateEditValues({ sellTriggerPercent: parseFloat(e.target.value) })}
                                     className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                     step="0.1"
                                   />
@@ -1009,8 +1024,8 @@ const ConstraintPositionList: React.FC = () => {
                                   <span className="text-xs text-gray-500 dark:text-gray-400">$</span>
                                   <input
                                     type="number"
-                                    value={editValues.sellAmount}
-                                    onChange={(e) => setEditValues(prev => ({ ...prev, sellAmount: parseFloat(e.target.value) }))}
+                                    value={uiState.editValues.sellAmount}
+                                    onChange={(e) => updateEditValues({ sellAmount: parseFloat(e.target.value) })}
                                     className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                     step="100"
                                   />
@@ -1028,8 +1043,8 @@ const ConstraintPositionList: React.FC = () => {
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="number"
-                                    value={editValues.profitTriggerPercent || ''}
-                                    onChange={(e) => setEditValues(prev => ({ ...prev, profitTriggerPercent: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                                    value={uiState.editValues.profitTriggerPercent || ''}
+                                    onChange={(e) => updateEditValues({ profitTriggerPercent: e.target.value ? parseFloat(e.target.value) : undefined })}
                                     className="w-16 px-1 py-0.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded"
                                     step="0.1"
                                     placeholder="15"

@@ -26,7 +26,8 @@ const Constraints: React.FC = () => {
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editingStock, setEditingStock] = useState<string | null>(null);
   const [editingIndividual, setEditingIndividual] = useState<string | null>(null);
-  // Removed unused state variables - now handled by ConstraintGroupStocks component
+  const [addingStockToGroup, setAddingStockToGroup] = useState<string | null>(null);
+  const [newStockSymbol, setNewStockSymbol] = useState('');
   const [editValues, setEditValues] = useState<{
     buyTriggerPercent: number;
     sellTriggerPercent: number;
@@ -185,6 +186,35 @@ const Constraints: React.FC = () => {
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update constraint');
+    }
+  };
+
+  const handleAddStockToGroup = async (groupId: string, stockSymbol: string) => {
+    if (!stockSymbol.trim()) {
+      toast.error('Please select a stock symbol');
+      return;
+    }
+
+    try {
+      await constraintGroupsService.addStockToGroup(groupId, stockSymbol.trim());
+      toast.success(`${stockSymbol} added to group successfully!`);
+      setAddingStockToGroup(null);
+      setNewStockSymbol('');
+      await loadData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add stock to group');
+    }
+  };
+
+  const handleRemoveStockFromGroup = async (groupId: string, stockSymbol: string) => {
+    if (window.confirm(`Are you sure you want to remove ${stockSymbol} from this group?`)) {
+      try {
+        await constraintGroupsService.removeStockFromGroup(groupId, stockSymbol);
+        toast.success(`${stockSymbol} removed from group successfully!`);
+        await loadData();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to remove stock from group');
+      }
     }
   };
 
