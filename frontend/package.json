@@ -33,8 +33,10 @@
     "postcss": "^8.4.31"
   },
   "scripts": {
+    "dev": "vite",
     "start": "vite",
     "build": "tsc && vite build",
+    "vercel-build": "npm run build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "preview": "vite preview"

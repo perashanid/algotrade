@@ -167,3 +167,11 @@ netlify.toml
 
 # Jest configuration
 jest.config.*
+
+# Vercel
+.vercel
+*.vercel.app
+
+# Build outputs
+api/dist/
+backend/dist/
