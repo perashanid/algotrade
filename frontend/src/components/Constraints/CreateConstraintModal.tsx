@@ -587,8 +587,8 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                 {/* Buy Trigger */}
                 <div className="card">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="p-2 bg-red-100 rounded-lg">
-                      <TrendingDown className="h-5 w-5 text-red-600" />
+                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                      <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">Buy Trigger (Price Drop)</h3>
                   </div>
@@ -636,8 +636,8 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                 {/* Sell Trigger */}
                 <div className="card">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <TrendingUp className="h-5 w-5 text-green-600" />
+                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">Sell Trigger (Price Rise)</h3>
                   </div>
@@ -682,8 +682,8 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                 {/* Profit Target */}
                 <div className="card">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Target className="h-5 w-5 text-blue-600" />
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                      <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">Profit Target (Optional)</h3>
                   </div>
@@ -707,12 +707,12 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
                 </div>
 
                 {/* Warning */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-medium text-yellow-800">Important Notice</h4>
-                      <p className="text-sm text-yellow-700 mt-1">
+                      <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">Important Notice</h4>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
                         This constraint will apply to {getTotalStocks()} stocks. 
                         Maximum potential investment: {formatCurrency(formData.buyAmount * getTotalStocks())}
                       </p>
@@ -724,7 +724,7 @@ const CreateConstraintModal: React.FC<CreateConstraintModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <div className="flex gap-3">
               {currentStep > 1 && (
                 <button
