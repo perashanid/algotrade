@@ -44,8 +44,8 @@ export class StockGroupModel {
   }
 
   static async update(groupId: string, userId: string, updates: Partial<CreateStockGroupRequest>): Promise<StockGroup | null> {
-    const setClause = [];
-    const values = [];
+    const setClause: string[] = [];
+    const values: any[] = [];
     let paramCount = 1;
 
     if (updates.name !== undefined) {

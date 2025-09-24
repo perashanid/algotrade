@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { BacktestService } from '../services/BacktestService';
-// import { APIResponse, BacktestResult, BacktestRequest } from '../types';
 
 export class BacktestController {
   static async runBacktest(

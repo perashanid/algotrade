@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { PortfolioService } from '../services/PortfolioService';
-// import { APIResponse, Portfolio, Position, PerformanceMetrics } from '../types';
 
 export class PortfolioController {
   static async getPortfolio(req: AuthRequest, res: Response): Promise<void> {

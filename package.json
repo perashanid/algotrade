@@ -7,9 +7,8 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
-    "build": "cd frontend && npm install && npm run build",
-    "start": "cd backend && npm start",
-    "vercel-build": "cd frontend && npm install && npm run build && mkdir -p ../public && cp -r dist/* ../public/"
+    "build": "cd frontend && npm install && npm run build && mkdir -p ../public && cp -r dist/* ../public/",
+    "start": "cd backend && npm start"
   },
   "keywords": ["trading", "algorithmic", "portfolio", "stocks"],
   "license": "MIT",

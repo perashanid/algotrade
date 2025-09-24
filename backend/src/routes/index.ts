@@ -11,7 +11,6 @@ import tradeRoutes from './trades';
 import systemRoutes from './system';
 import optimizedConstraintRoutes from './optimizedConstraints';
 import { apiLimiter, authLimiter, marketDataLimiter } from '../middleware/rateLimiter';
-import { getPerformanceMetrics } from '../middleware/performanceMonitor';
 
 const router = Router();
 
@@ -46,8 +45,5 @@ router.get('/health', (_req, res) => {
     timestamp: new Date()
   });
 });
-
-// Performance metrics endpoint
-router.get('/performance', getPerformanceMetrics);
 
 export default router;

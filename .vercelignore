@@ -1,0 +1,11 @@
+backend/
+frontend/node_modules/
+backend/node_modules/
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.DS_Store
+.vscode/
+.git/

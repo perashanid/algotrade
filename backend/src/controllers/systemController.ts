@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { ConstraintEvaluatorService } from '../services/ConstraintEvaluatorService';
 import { PriceMonitorJob } from '../jobs/priceMonitor';
-// import { APIResponse } from '../types';
 
 export class SystemController {
   static async getSystemStatus(_req: AuthRequest, res: Response): Promise<void> {

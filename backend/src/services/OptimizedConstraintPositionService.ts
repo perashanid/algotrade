@@ -1,5 +1,4 @@
 import { executeQueryWithRetry } from '../config/database';
-import { CacheService, CacheKeys, CacheTTL, CacheInvalidationStrategy } from './CacheService';
 
 // Optimized constraint position data structure
 export interface OptimizedConstraintPosition {
@@ -44,11 +43,7 @@ export interface OptimizedGroupSummary {
 export class OptimizedConstraintPositionService {
   // Single optimized query to get all constraint positions with portfolio data
   static async getConstraintPositions(userId: string): Promise<OptimizedConstraintPosition[]> {
-    return await CacheService.getOrSet(
-      CacheKeys.constraintPositions(userId),
-      () => this.getConstraintPositionsFromDatabase(userId),
-      CacheTTL.MEDIUM
-    );
+    return await this.getConstraintPositionsFromDatabase(userId);
   }
 
   private static async getConstraintPositionsFromDatabase(userId: string): Promise<OptimizedConstraintPosition[]> {
@@ -207,11 +202,7 @@ export class OptimizedConstraintPositionService {
 
   // Optimized group summary with database-level aggregations
   static async getGroupSummary(userId: string): Promise<OptimizedGroupSummary[]> {
-    return await CacheService.getOrSet(
-      CacheKeys.groupSummary(userId),
-      () => this.getGroupSummaryFromDatabase(userId),
-      CacheTTL.MEDIUM
-    );
+    return await this.getGroupSummaryFromDatabase(userId);
   }
 
   private static async getGroupSummaryFromDatabase(userId: string): Promise<OptimizedGroupSummary[]> {
@@ -302,15 +293,9 @@ export class OptimizedConstraintPositionService {
     }
   }
 
-  // Batch update constraint positions when constraints change
-  static async invalidateConstraintPositions(userId: string): Promise<void> {
-    await CacheInvalidationStrategy.onConstraintUpdate(userId);
-  }
+  // Cache invalidation removed for deployment reliability
 
-  // Batch update constraint positions when portfolio changes
-  static async invalidatePortfolioRelatedData(userId: string): Promise<void> {
-    await CacheInvalidationStrategy.onPortfolioUpdate(userId);
-  }
+  // Cache invalidation removed for deployment reliability
 
   // Get combined dashboard data in single call
   static async getDashboardData(userId: string): Promise<{
@@ -348,24 +333,5 @@ export class OptimizedConstraintPositionService {
     }
   }
 
-  // Refresh constraint position cache
-  static async refreshCache(userId: string): Promise<void> {
-    try {
-      await Promise.all([
-        CacheService.refresh(
-          CacheKeys.constraintPositions(userId),
-          () => this.getConstraintPositionsFromDatabase(userId),
-          CacheTTL.MEDIUM
-        ),
-        CacheService.refresh(
-          CacheKeys.groupSummary(userId),
-          () => this.getGroupSummaryFromDatabase(userId),
-          CacheTTL.MEDIUM
-        )
-      ]);
-    } catch (error) {
-      console.error('Error refreshing constraint position cache:', error);
-      throw error;
-    }
-  }
+
 }
