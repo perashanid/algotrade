@@ -43,9 +43,10 @@ async function constraintsHandler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'PUT') {
       // Handle constraint updates
-      const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
-      const pathParts = pathname.split('/').filter(Boolean);
-      const constraintId = pathParts[2]; // /api/constraints/{id}
+      const url = req.url || '';
+      const pathParts = url.split('/').filter(Boolean);
+      // URL format: /api/constraints/{id} or just /{id}
+      const constraintId = pathParts[pathParts.length - 1]; // Get the last part as ID
       
       if (!constraintId) {
         res.status(400).json({
@@ -141,9 +142,10 @@ async function constraintsHandler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'DELETE') {
       // Delete constraint
-      const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
-      const pathParts = pathname.split('/').filter(Boolean);
-      const constraintId = pathParts[2]; // /api/constraints/{id}
+      const url = req.url || '';
+      const pathParts = url.split('/').filter(Boolean);
+      // URL format: /api/constraints/{id} or just /{id}
+      const constraintId = pathParts[pathParts.length - 1]; // Get the last part as ID
       
       if (!constraintId) {
         res.status(400).json({
