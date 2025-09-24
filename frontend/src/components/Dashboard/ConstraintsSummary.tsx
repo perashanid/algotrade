@@ -102,11 +102,14 @@ const ConstraintsSummary: React.FC = () => {
     );
   }
 
-  const activeGroups = processedGroups.filter(g => g.group.isActive);
+  // Ensure processedGroups is always an array
+  const safeProcessedGroups = Array.isArray(processedGroups) ? processedGroups : [];
+  
+  const activeGroups = safeProcessedGroups.filter(g => g.group.isActive);
   const totalActive = activeGroups.length;
-  const totalConstraints = processedGroups.length;
-  const totalStocks = processedGroups.reduce((sum, group) => sum + group.allStocks.length, 0);
-  const totalPositions = processedGroups.reduce((sum, group) => sum + group.activePositions, 0);
+  const totalConstraints = safeProcessedGroups.length;
+  const totalStocks = safeProcessedGroups.reduce((sum, group) => sum + group.allStocks.length, 0);
+  const totalPositions = safeProcessedGroups.reduce((sum, group) => sum + group.activePositions, 0);
 
   const formatPercent = (value: number) => {
     return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
@@ -181,10 +184,10 @@ const ConstraintsSummary: React.FC = () => {
           <div>
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1">
               <Users className="h-4 w-4" />
-              Constraint Groups ({processedGroups.length})
+              Constraint Groups ({safeProcessedGroups.length})
             </h4>
             <div className="space-y-2">
-              {processedGroups.slice(0, 3).map((groupData) => (
+              {safeProcessedGroups.slice(0, 3).map((groupData) => (
                 <div key={groupData.group.id} className="p-2 bg-gray-50 dark:bg-gray-800 rounded">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 flex-1">
@@ -262,13 +265,13 @@ const ConstraintsSummary: React.FC = () => {
                   )}
                 </div>
               ))}
-              {processedGroups.length > 3 && (
+              {safeProcessedGroups.length > 3 && (
                 <div className="text-center">
                   <Link
                     to="/constraints"
                     className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                   >
-                    +{processedGroups.length - 3} more groups
+                    +{safeProcessedGroups.length - 3} more groups
                   </Link>
                 </div>
               )}

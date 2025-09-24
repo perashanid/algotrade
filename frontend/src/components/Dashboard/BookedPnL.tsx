@@ -17,10 +17,13 @@ const BookedPnL: React.FC = () => {
     try {
       setLoading(true);
       const data = await tradeHistoryService.getClosedPositions();
-      setClosedPositions(data);
+      // Ensure data is always an array
+      setClosedPositions(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error('Failed to load closed positions');
       console.error('Error loading closed positions:', error);
+      // Set empty array on error
+      setClosedPositions([]);
     } finally {
       setLoading(false);
     }
@@ -47,15 +50,18 @@ const BookedPnL: React.FC = () => {
     });
   };
 
-  const filteredPositions = closedPositions.filter(position => {
+  // Ensure closedPositions is always an array
+  const safeClosedPositions = Array.isArray(closedPositions) ? closedPositions : [];
+
+  const filteredPositions = safeClosedPositions.filter(position => {
     if (filter === 'profit') return position.realizedPnl > 0;
     if (filter === 'loss') return position.realizedPnl < 0;
     return true;
   });
 
-  const totalPnL = closedPositions.reduce((sum, p) => sum + p.realizedPnl, 0);
-  const profitCount = closedPositions.filter(p => p.realizedPnl > 0).length;
-  const lossCount = closedPositions.filter(p => p.realizedPnl < 0).length;
+  const totalPnL = safeClosedPositions.reduce((sum, p) => sum + p.realizedPnl, 0);
+  const profitCount = safeClosedPositions.filter(p => p.realizedPnl > 0).length;
+  const lossCount = safeClosedPositions.filter(p => p.realizedPnl < 0).length;
 
   if (loading) {
     return (
@@ -76,7 +82,7 @@ const BookedPnL: React.FC = () => {
     );
   }
 
-  if (closedPositions.length === 0) {
+  if (safeClosedPositions.length === 0) {
     return (
       <div className="card">
         <div className="text-center py-8">
@@ -131,7 +137,7 @@ const BookedPnL: React.FC = () => {
               : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          All ({closedPositions.length})
+          All ({safeClosedPositions.length})
         </button>
         <button
           onClick={() => setFilter('profit')}
