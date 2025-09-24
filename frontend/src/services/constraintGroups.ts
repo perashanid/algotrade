@@ -103,10 +103,18 @@ export const constraintGroupsService = {
   },
 
   async deleteConstraintGroup(id: string): Promise<void> {
-    const response = await api.delete<APIResponse<null>>(`/constraint-groups/${id}`);
+    console.log('constraintGroupsService.deleteConstraintGroup called with id:', id);
+    const url = `/constraint-groups/${id}`;
+    console.log('Making DELETE request to:', url);
+
+    const response = await api.delete<APIResponse<null>>(url);
+    console.log('Delete response:', response.data);
 
     if (!response.data.success) {
+      console.error('Delete failed with error:', response.data.error);
       throw new Error(response.data.error?.message || 'Failed to delete constraint group');
     }
+
+    console.log('Delete successful');
   }
 };
