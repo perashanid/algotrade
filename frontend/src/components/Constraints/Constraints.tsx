@@ -49,19 +49,7 @@ const Constraints: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateStockGroupModal, setShowCreateStockGroupModal] = useState(false);
   const [viewMode, setViewMode] = useState<'individual' | 'groups' | 'stock-groups'>('groups');
-  const [editingIndividual, setEditingIndividual] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{
-    buyTriggerPercent: number;
-    sellTriggerPercent: number;
-    profitTriggerPercent?: number;
-    buyAmount: number;
-    sellAmount: number;
-  }>({
-    buyTriggerPercent: 0,
-    sellTriggerPercent: 0,
-    buyAmount: 0,
-    sellAmount: 0
-  });
+
 
   // Create handlers
   const handleCreateConstraintGroup = async (constraintData: CreateConstraintGroupRequest) => {
@@ -76,40 +64,17 @@ const Constraints: React.FC = () => {
     await invalidateConstraintData();
   };
 
-  // Edit handlers
-  const handleEditIndividual = (constraint: any) => {
-    setEditingIndividual(constraint.id);
-    setEditValues({
-      buyTriggerPercent: constraint.buyTriggerPercent,
-      sellTriggerPercent: constraint.sellTriggerPercent,
-      profitTriggerPercent: constraint.profitTriggerPercent,
-      buyAmount: constraint.buyAmount,
-      sellAmount: constraint.sellAmount
-    });
-  };
-
-  const handleSaveEdit = async () => {
+  // Individual constraints now handle their own editing internally
+  const handleSaveEdit = async (id: string, values: any) => {
     try {
-      if (editingIndividual) {
-        await constraintsService.updateConstraint(editingIndividual, editValues);
-        toast.success('Individual constraint updated successfully!');
-        setEditingIndividual(null);
-        await loadData();
-        await invalidateConstraintData();
-      }
+      await constraintsService.updateConstraint(id, values);
+      toast.success('Constraint updated successfully!');
+      await loadData();
+      await invalidateConstraintData();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update constraint');
+      throw error; // Re-throw to let the component handle the error state
     }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingIndividual(null);
-    setEditValues({
-      buyTriggerPercent: 0,
-      sellTriggerPercent: 0,
-      buyAmount: 0,
-      sellAmount: 0
-    });
   };
 
   if (loading) {
@@ -158,12 +123,7 @@ const Constraints: React.FC = () => {
                   constraints={constraints}
                   onToggleActive={handleToggleActive}
                   onDelete={handleDelete}
-                  onEdit={handleEditIndividual}
                   onSaveEdit={handleSaveEdit}
-                  onCancelEdit={handleCancelEdit}
-                  editingIndividual={editingIndividual}
-                  editValues={editValues}
-                  setEditValues={setEditValues}
                 />
               </>
             )}
