@@ -38,11 +38,13 @@ const ConstraintGroupStocks: React.FC<ConstraintGroupStocksProps> = ({ group, on
     if (!editingStock) return;
 
     try {
+      console.log('Updating stock constraint:', { groupId: group.id, stock: editingStock, values: editValues });
       await constraintGroupsService.updateStockConstraint(group.id, editingStock, editValues);
       toast.success(`${editingStock} constraints updated successfully!`);
       setEditingStock(null);
       onUpdate();
     } catch (error) {
+      console.error('Update stock constraint error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update stock constraint');
     }
   };
@@ -66,11 +68,13 @@ const ConstraintGroupStocks: React.FC<ConstraintGroupStocksProps> = ({ group, on
     }
 
     try {
+      console.log('Adding stock to group:', { groupId: group.id, stockSymbol: stockSymbol.trim() });
       await constraintGroupsService.addStockToGroup(group.id, stockSymbol.trim());
       toast.success(`${stockSymbol} added to group successfully!`);
       setAddingStock(false);
       onUpdate();
     } catch (error) {
+      console.error('Add stock to group error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to add stock to group');
     }
   };
@@ -78,10 +82,12 @@ const ConstraintGroupStocks: React.FC<ConstraintGroupStocksProps> = ({ group, on
   const handleRemoveStock = async (stockSymbol: string) => {
     if (window.confirm(`Are you sure you want to remove ${stockSymbol} from this group?`)) {
       try {
+        console.log('Removing stock from group:', { groupId: group.id, stockSymbol });
         await constraintGroupsService.removeStockFromGroup(group.id, stockSymbol);
         toast.success(`${stockSymbol} removed from group successfully!`);
         onUpdate();
       } catch (error) {
+        console.error('Remove stock from group error:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to remove stock from group');
       }
     }
