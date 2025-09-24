@@ -48,9 +48,9 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
 
     if (req.method === 'PUT') {
       // Handle different PUT operations based on URL path
-      const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
-      const pathParts = pathname.split('/').filter(Boolean);
-      const groupId = pathParts[2]; // /api/constraint-groups/{id}
+      const url = req.url || '';
+      const pathParts = url.split('/').filter(Boolean);
+      const groupId = pathParts[pathParts.length - 1]; // Get the last part as ID
       
       if (!groupId) {
         res.status(400).json({
@@ -262,8 +262,8 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
     }
 
     if (req.method === 'DELETE') {
-      const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
-      const pathParts = pathname.split('/').filter(Boolean);
+      const url = req.url || '';
+      const pathParts = url.split('/').filter(Boolean);
       const groupId = pathParts[2]; // /api/constraint-groups/{id}
       
       if (!groupId) {
@@ -361,8 +361,8 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
     }
 
     if (req.method === 'POST') {
-      const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
-      const pathParts = pathname.split('/').filter(Boolean);
+      const url = req.url || '';
+      const pathParts = url.split('/').filter(Boolean);
       
       // Handle adding stock to group: POST /api/constraint-groups/{id}/stocks
       if (pathParts.length === 4 && pathParts[3] === 'stocks') {

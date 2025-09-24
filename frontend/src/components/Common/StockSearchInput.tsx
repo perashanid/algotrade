@@ -20,6 +20,7 @@ const StockSearchInput: React.FC<StockSearchInputProps> = ({
   useEffect(() => {
     if (searchTerm.trim()) {
       const results = searchStocks(searchTerm, 12);
+      console.log('Stock search results:', { searchTerm, results: results.length });
       setSearchResults(results);
       setShowDropdown(true);
     } else {

@@ -104,7 +104,13 @@ const ConstraintGroupStocks: React.FC<ConstraintGroupStocksProps> = ({ group, on
     }).format(value);
   };
 
-  const allStocks = [...group.stocks, ...group.stockGroups.flatMap(sg => sg.stocks)];
+  // Safely get all stocks from the group
+  const safeStocks = Array.isArray(group.stocks) ? group.stocks : [];
+  const safeStockGroups = Array.isArray(group.stockGroups) ? group.stockGroups : [];
+  const stockGroupStocks = safeStockGroups.flatMap(sg => 
+    Array.isArray(sg.stocks) ? sg.stocks : []
+  );
+  const allStocks = [...safeStocks, ...stockGroupStocks];
 
 
 
