@@ -1,16 +1,11 @@
 import { PositionModel } from '../models/Position';
 import { MarketDataService } from './MarketDataService';
 import { Portfolio, Position, PerformanceMetrics } from '../types';
-import { CacheService, CacheKeys, CacheTTL, CacheInvalidationStrategy } from './CacheService';
 import { executeQueryWithRetry } from '../config/database';
 
 export class PortfolioService {
   static async getPortfolio(userId: string): Promise<Portfolio> {
-    return await CacheService.getOrSet(
-      CacheKeys.portfolio(userId),
-      () => this.getPortfolioFromDatabase(userId),
-      CacheTTL.PORTFOLIO
-    );
+    return await this.getPortfolioFromDatabase(userId);
   }
 
   // Optimized portfolio query with database-level calculations
@@ -110,20 +105,12 @@ export class PortfolioService {
   }
 
   static async getPositions(userId: string): Promise<Position[]> {
-    return await CacheService.getOrSet(
-      CacheKeys.positions(userId),
-      () => PositionModel.findByUserId(userId),
-      CacheTTL.PORTFOLIO
-    );
+    return await PositionModel.findByUserId(userId);
   }
 
   static async updatePosition(userId: string, stockSymbol: string, quantity: number, price: number): Promise<Position> {
     try {
       const position = await PositionModel.upsert(userId, stockSymbol, quantity, price);
-      
-      // Invalidate related cache entries
-      await CacheInvalidationStrategy.onPortfolioUpdate(userId);
-      
       return position;
     } catch (error) {
       console.error('Error updating position:', error);
@@ -182,12 +169,6 @@ export class PortfolioService {
   static async deletePosition(userId: string, stockSymbol: string): Promise<boolean> {
     try {
       const result = await PositionModel.delete(userId, stockSymbol);
-      
-      if (result) {
-        // Invalidate related cache entries
-        await CacheInvalidationStrategy.onPortfolioUpdate(userId);
-      }
-      
       return result;
     } catch (error) {
       console.error('Error deleting position:', error);
@@ -208,11 +189,7 @@ export class PortfolioService {
     topPerformers: Array<{ symbol: string; gainLossPercent: number }>;
     worstPerformers: Array<{ symbol: string; gainLossPercent: number }>;
   }> {
-    return await CacheService.getOrSet(
-      CacheKeys.portfolioSummary(userId),
-      () => this.getPortfolioSummaryFromDatabase(userId),
-      CacheTTL.PORTFOLIO
-    );
+    return await this.getPortfolioSummaryFromDatabase(userId);
   }
 
   // Optimized portfolio summary with database-level calculations
@@ -324,9 +301,6 @@ export class PortfolioService {
       // Update all positions with current prices using batch operation
       await this.batchUpdatePositionPrices(priceUpdates);
       
-      // Invalidate price-related cache entries
-      await CacheInvalidationStrategy.onPriceUpdate(symbols);
-      
       console.log(`Updated prices for ${priceUpdates.length} symbols`);
     } catch (error) {
       console.error('Error updating all position prices:', error);
@@ -374,13 +348,6 @@ export class PortfolioService {
 
         if (priceUpdates.length > 0) {
           await this.batchUpdatePositionPrices(priceUpdates);
-          
-          // Refresh portfolio cache with updated prices
-          await CacheService.backgroundRefresh(
-            CacheKeys.portfolio(userId),
-            () => this.getPortfolioFromDatabase(userId),
-            CacheTTL.PORTFOLIO
-          );
         }
       }).catch(error => {
         console.error('Background price update failed:', error);

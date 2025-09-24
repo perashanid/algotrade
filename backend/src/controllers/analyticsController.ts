@@ -2,7 +2,6 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { PerformanceAnalyticsService } from '../services/PerformanceAnalyticsService';
 import { TradeHistoryModel } from '../models/TradeHistory';
-// import { APIResponse } from '../types';
 
 export class AnalyticsController {
   static async getPerformanceMetrics(req: AuthRequest, res: Response): Promise<void> {

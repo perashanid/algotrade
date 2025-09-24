@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { memoryCache } from '../config/database';
 import { PriceData, BenchmarkData, FinnhubQuote, FinnhubCandle } from '../types';
 
 export class MarketDataService {
@@ -12,15 +11,6 @@ export class MarketDataService {
     try {
       if (!stockSymbol) {
         throw new Error('Stock symbol is required');
-      }
-      
-      // Check cache first
-      const cacheKey = `stock_price:${stockSymbol.toUpperCase()}`;
-      const cachedData = await memoryCache.get(cacheKey);
-      
-      if (cachedData) {
-        const parsed = JSON.parse(cachedData);
-        return parsed.price;
       }
 
       // Fetch from Finnhub API
@@ -37,17 +27,6 @@ export class MarketDataService {
       if (!quote.c || quote.c === 0) {
         throw new Error(`No price data available for ${stockSymbol}`);
       }
-
-      const priceData = {
-        price: quote.c,
-        timestamp: new Date().toISOString(),
-        volume: 0, // Finnhub doesn't provide volume in quote endpoint
-        change: quote.d,
-        changePercent: quote.dp
-      };
-
-      // Cache the result
-      await memoryCache.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(priceData));
 
       return quote.c;
     } catch (error) {
@@ -68,21 +47,6 @@ export class MarketDataService {
 
   static async getPriceData(stockSymbol: string): Promise<PriceData> {
     try {
-      const cacheKey = `stock_price:${stockSymbol.toUpperCase()}`;
-      const cachedData = await memoryCache.get(cacheKey);
-      
-      if (cachedData) {
-        const parsed = JSON.parse(cachedData);
-        return {
-          symbol: stockSymbol.toUpperCase(),
-          price: parsed.price,
-          timestamp: new Date(parsed.timestamp),
-          volume: parsed.volume,
-          change: parsed.change,
-          changePercent: parsed.changePercent
-        };
-      }
-
       const response = await axios.get(`${this.FINNHUB_BASE_URL}/quote`, {
         params: {
           symbol: stockSymbol.toUpperCase(),
@@ -105,17 +69,6 @@ export class MarketDataService {
         change: quote.d,
         changePercent: quote.dp
       };
-
-      // Cache the result
-      const cacheData = {
-        price: quote.c,
-        timestamp: new Date().toISOString(),
-        volume: 0,
-        change: quote.d,
-        changePercent: quote.dp
-      };
-      
-      await memoryCache.setEx(cacheKey, this.CACHE_TTL, JSON.stringify(cacheData));
 
       return priceData;
     } catch (error) {
@@ -170,20 +123,6 @@ export class MarketDataService {
 
   static async getBenchmarkData(timeRange: string = '1D'): Promise<BenchmarkData> {
     try {
-      const cacheKey = `market_data:sp500:${timeRange}`;
-      const cachedData = await memoryCache.get(cacheKey);
-      
-      if (cachedData) {
-        const parsed = JSON.parse(cachedData);
-        return {
-          symbol: 'SPY',
-          price: parsed.price,
-          change: parsed.change,
-          changePercent: parsed.changePercent,
-          timestamp: new Date(parsed.timestamp)
-        };
-      }
-
       // Use SPY ETF as S&P 500 proxy
       const response = await axios.get(`${this.FINNHUB_BASE_URL}/quote`, {
         params: {
@@ -208,15 +147,6 @@ export class MarketDataService {
       };
 
       // Cache the result
-      const cacheData = {
-        price: quote.c,
-        change: quote.d,
-        changePercent: quote.dp,
-        timestamp: new Date().toISOString()
-      };
-      
-      await memoryCache.setEx(cacheKey, this.BENCHMARK_CACHE_TTL, JSON.stringify(cacheData));
-
       return benchmarkData;
     } catch (error) {
       console.error('Error fetching benchmark data:', error);

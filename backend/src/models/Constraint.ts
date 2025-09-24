@@ -65,8 +65,8 @@ export class ConstraintModel {
   }
 
   static async update(constraintId: string, userId: string, updates: UpdateConstraintRequest): Promise<TradingConstraint | null> {
-    const setClause = [];
-    const values = [];
+    const setClause: string[] = [];
+    const values: any[] = [];
     let paramCount = 1;
 
     if (updates.buyTriggerPercent !== undefined) {

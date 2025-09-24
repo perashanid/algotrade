@@ -78,7 +78,7 @@ export class OptimizedConstraintController {
     }
   }
 
-  // Refresh constraint position cache
+  // Refresh constraint position cache (cache removed for deployment reliability)
   static async refreshCache(req: AuthRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
@@ -87,18 +87,18 @@ export class OptimizedConstraintController {
         return;
       }
 
-      await OptimizedConstraintPositionService.refreshCache(userId);
-
+      // Cache functionality removed - data is fetched directly from database
+      // This endpoint now just returns success for compatibility
       res.json({
         success: true,
-        message: 'Cache refreshed successfully',
+        message: 'Data is fetched directly from database (cache removed for deployment reliability)',
         timestamp: new Date()
       });
     } catch (error) {
-      console.error('Error refreshing cache:', error);
+      console.error('Error in refresh cache endpoint:', error);
       res.status(500).json({
         success: false,
-        error: 'Failed to refresh cache'
+        error: 'Failed to process refresh request'
       });
     }
   }

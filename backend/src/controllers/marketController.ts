@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { MarketDataService } from '../services/MarketDataService';
 import { AuthRequest } from '../middleware/auth';
-// import { APIResponse, PriceData, BenchmarkData } from '../types';
 
 export class MarketController {
   static async getQuote(req: AuthRequest, res: Response): Promise<void> {
