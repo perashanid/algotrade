@@ -1,10 +1,9 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { StockGroupModel } from '../models/StockGroup';
 import { CreateStockGroupRequest, APIResponse, StockGroup } from '../types';
-import { AuthRequest } from '../middleware/auth';
 
 export class StockGroupController {
-  static async getStockGroups(req: AuthRequest, res: Response): Promise<void> {
+  static async getStockGroups(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const stockGroups = await StockGroupModel.findByUserId(userId);
@@ -27,7 +26,7 @@ export class StockGroupController {
     }
   }
 
-  static async createStockGroup(req: AuthRequest, res: Response): Promise<void> {
+  static async createStockGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const groupData: CreateStockGroupRequest = req.body;
@@ -79,7 +78,7 @@ export class StockGroupController {
     }
   }
 
-  static async updateStockGroup(req: AuthRequest, res: Response): Promise<void> {
+  static async updateStockGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const groupId = req.params.id;
@@ -117,7 +116,7 @@ export class StockGroupController {
     }
   }
 
-  static async deleteStockGroup(req: AuthRequest, res: Response): Promise<void> {
+  static async deleteStockGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const groupId = req.params.id;

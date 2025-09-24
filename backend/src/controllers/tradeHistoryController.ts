@@ -1,10 +1,9 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response } from 'express';
 import { TradeHistoryModel } from '../models/TradeHistory';
 import { TradeHistory } from '../types';
 
 export class TradeHistoryController {
-  static async getClosedPositions(req: AuthRequest, res: Response): Promise<void> {
+  static async getClosedPositions(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const closedPositions = await TradeHistoryModel.getClosedPositions(userId);
@@ -27,7 +26,7 @@ export class TradeHistoryController {
     }
   }
 
-  static async getTradeHistory(req: AuthRequest, res: Response): Promise<void> {
+  static async getTradeHistory(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { limit, offset, symbol } = req.query;
@@ -92,7 +91,7 @@ export class TradeHistoryController {
     }
   }
 
-  static async getTradesByConstraint(req: AuthRequest, res: Response): Promise<void> {
+  static async getTradesByConstraint(req: Request, res: Response): Promise<void> {
     try {
       const { constraintId } = req.params;
 
@@ -128,7 +127,7 @@ export class TradeHistoryController {
     }
   }
 
-  static async getTradeStatistics(req: AuthRequest, res: Response): Promise<void> {
+  static async getTradeStatistics(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { startDate, endDate } = req.query;
@@ -198,7 +197,7 @@ export class TradeHistoryController {
     }
   }
 
-  static async exportTradeHistory(req: AuthRequest, res: Response): Promise<void> {
+  static async exportTradeHistory(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { startDate, endDate, format } = req.query;
@@ -272,7 +271,7 @@ export class TradeHistoryController {
     }
   }
 
-  static async getTradeAnalytics(req: AuthRequest, res: Response): Promise<void> {
+  static async getTradeAnalytics(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { timeRange } = req.query;
@@ -309,7 +308,7 @@ export class TradeHistoryController {
     }
   }
 
-  static async getTradingPerformanceBySymbol(req: AuthRequest, res: Response): Promise<void> {
+  static async getTradingPerformanceBySymbol(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const trades = await TradeHistoryModel.findByUserId(userId, 1000);

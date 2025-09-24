@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
 import { ConstraintEvaluatorService } from '../services/ConstraintEvaluatorService';
 import { PriceMonitorJob } from '../jobs/priceMonitor';
 
 export class SystemController {
-  static async getSystemStatus(_req: AuthRequest, res: Response): Promise<void> {
+  static async getSystemStatus(_req: Request, res: Response): Promise<void> {
     try {
       const evaluationStatus = await ConstraintEvaluatorService.getEvaluationStatus();
       const jobStatus = PriceMonitorJob.getStatus();
@@ -31,7 +30,7 @@ export class SystemController {
     }
   }
 
-  static async triggerConstraintEvaluation(_req: AuthRequest, res: Response): Promise<void> {
+  static async triggerConstraintEvaluation(_req: Request, res: Response): Promise<void> {
     try {
       await PriceMonitorJob.triggerConstraintEvaluation();
 
@@ -53,7 +52,7 @@ export class SystemController {
     }
   }
 
-  static async triggerPriceUpdate(_req: AuthRequest, res: Response): Promise<void> {
+  static async triggerPriceUpdate(_req: Request, res: Response): Promise<void> {
     try {
       await PriceMonitorJob.triggerPriceUpdate();
 

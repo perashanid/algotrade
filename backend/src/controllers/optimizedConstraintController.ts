@@ -1,10 +1,9 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response } from 'express';
 import { OptimizedConstraintPositionService } from '../services/OptimizedConstraintPositionService';
 
 export class OptimizedConstraintController {
   // Get optimized constraint positions
-  static async getConstraintPositions(req: AuthRequest, res: Response): Promise<void> {
+  static async getConstraintPositions(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -29,7 +28,7 @@ export class OptimizedConstraintController {
   }
 
   // Get optimized group summary
-  static async getGroupSummary(req: AuthRequest, res: Response): Promise<void> {
+  static async getGroupSummary(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -54,7 +53,7 @@ export class OptimizedConstraintController {
   }
 
   // Get combined dashboard data
-  static async getDashboardData(req: AuthRequest, res: Response): Promise<void> {
+  static async getDashboardData(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -79,7 +78,7 @@ export class OptimizedConstraintController {
   }
 
   // Refresh constraint position cache (cache removed for deployment reliability)
-  static async refreshCache(req: AuthRequest, res: Response): Promise<void> {
+  static async refreshCache(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {

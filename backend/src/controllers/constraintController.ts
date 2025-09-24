@@ -1,10 +1,9 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response } from 'express';
 import { ConstraintService } from '../services/ConstraintService';
 
 export class ConstraintController {
   static async createConstraint(
-    req: AuthRequest,
+    req: Request,
     res: Response
   ): Promise<void> {
     try {
@@ -42,7 +41,7 @@ export class ConstraintController {
     }
   }
 
-  static async getConstraints(req: AuthRequest, res: Response): Promise<void> {
+  static async getConstraints(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const constraints = await ConstraintService.getUserConstraints(userId);
@@ -65,7 +64,7 @@ export class ConstraintController {
     }
   }
 
-  static async getConstraint(req: AuthRequest, res: Response): Promise<void> {
+  static async getConstraint(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const constraintId = req.params.id;
@@ -103,7 +102,7 @@ export class ConstraintController {
   }
 
   static async updateConstraint(
-    req: AuthRequest,
+    req: Request,
     res: Response
   ): Promise<void> {
     try {
@@ -155,7 +154,7 @@ export class ConstraintController {
     }
   }
 
-  static async deleteConstraint(req: AuthRequest, res: Response): Promise<void> {
+  static async deleteConstraint(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const constraintId = req.params.id;
@@ -192,7 +191,7 @@ export class ConstraintController {
     }
   }
 
-  static async toggleConstraint(req: AuthRequest, res: Response): Promise<void> {
+  static async toggleConstraint(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const constraintId = req.params.id;

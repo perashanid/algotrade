@@ -1,9 +1,8 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response } from 'express';
 import { PortfolioService } from '../services/PortfolioService';
 
 export class PortfolioController {
-  static async getPortfolio(req: AuthRequest, res: Response): Promise<void> {
+  static async getPortfolio(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const portfolio = await PortfolioService.getPortfolio(userId);
@@ -26,7 +25,7 @@ export class PortfolioController {
     }
   }
 
-  static async getPositions(req: AuthRequest, res: Response): Promise<void> {
+  static async getPositions(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const positions = await PortfolioService.getPositions(userId);
@@ -49,7 +48,7 @@ export class PortfolioController {
     }
   }
 
-  static async getPosition(req: AuthRequest, res: Response): Promise<void> {
+  static async getPosition(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { symbol } = req.params;
@@ -98,7 +97,7 @@ export class PortfolioController {
     }
   }
 
-  static async updatePosition(req: AuthRequest, res: Response): Promise<void> {
+  static async updatePosition(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { stockSymbol, quantity, price } = req.body;
@@ -159,7 +158,7 @@ export class PortfolioController {
     }
   }
 
-  static async deletePosition(req: AuthRequest, res: Response): Promise<void> {
+  static async deletePosition(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { symbol } = req.params;
@@ -208,7 +207,7 @@ export class PortfolioController {
     }
   }
 
-  static async getPerformance(req: AuthRequest, res: Response): Promise<void> {
+  static async getPerformance(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { timeRange } = req.query;
@@ -236,7 +235,7 @@ export class PortfolioController {
     }
   }
 
-  static async getPortfolioSummary(req: AuthRequest, res: Response): Promise<void> {
+  static async getPortfolioSummary(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const summary = await PortfolioService.getPortfolioSummary(userId);
@@ -259,7 +258,7 @@ export class PortfolioController {
     }
   }
 
-  static async refreshPrices(_req: AuthRequest, res: Response): Promise<void> {
+  static async refreshPrices(_req: Request, res: Response): Promise<void> {
     try {
       await PortfolioService.updateAllPositionPrices();
 

@@ -1,5 +1,4 @@
 /// <reference types="node" />
-import { Request } from 'express';
 
 declare global {
   namespace Express {
