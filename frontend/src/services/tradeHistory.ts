@@ -57,7 +57,7 @@ export const tradeHistoryService = {
 
   async getClosedPositions(): Promise<ClosedPosition[]> {
     try {
-      const response = await api.get<APIResponse<ClosedPosition[]>>('/trades/closed-positions');
+      const response = await api.get<APIResponse<ClosedPosition[]>>('/trades?type=closed-positions');
       
       if (response.data.success && response.data.data) {
         return response.data.data;

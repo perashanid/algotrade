@@ -8,10 +8,10 @@ async function tradesHandler(req: VercelRequest, res: VercelResponse) {
     const user = requireAuth(req);
 
     if (req.method === 'GET') {
-      // Handle different trade endpoints based on URL
-      const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
+      // Handle different trade endpoints based on query parameters
+      const { type } = req.query;
       
-      if (pathname.includes('closed-positions')) {
+      if (type === 'closed-positions') {
         // Get closed positions
         res.status(200).json({
           success: true,
