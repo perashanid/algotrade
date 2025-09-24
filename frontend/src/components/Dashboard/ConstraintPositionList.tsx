@@ -42,8 +42,9 @@ const ConstraintPositionList: React.FC = () => {
         constraintsService.getConstraints()
       ]);
       
-      setGroupDisplayData(groupsData);
-      setIndividualConstraints(individualConstraintsData);
+      // Ensure data is always arrays
+      setGroupDisplayData(Array.isArray(groupsData) ? groupsData : []);
+      setIndividualConstraints(Array.isArray(individualConstraintsData) ? individualConstraintsData : []);
 
       // Expand all groups by default
       const allGroupIds = new Set(groupsData.map(group => group.group.id));
@@ -261,15 +262,19 @@ const ConstraintPositionList: React.FC = () => {
     return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
   };
 
+  // Ensure arrays are safe to use
+  const safeGroupDisplayData = Array.isArray(groupDisplayData) ? groupDisplayData : [];
+  const safeIndividualConstraints = Array.isArray(individualConstraints) ? individualConstraints : [];
+
   // Calculate summary statistics from group display data
-  const positionCount = groupDisplayData.reduce((sum, group) => sum + group.activePositions, 0) + 
-                       individualConstraints.filter(c => c.isActive).length;
-  const totalConstraints = groupDisplayData.length + individualConstraints.length;
-  const totalValue = groupDisplayData.reduce((sum, group) => sum + group.totalValue, 0);
-  const totalStocks = groupDisplayData.reduce((sum, group) => sum + group.stocks.length, 0) + individualConstraints.length;
+  const positionCount = safeGroupDisplayData.reduce((sum, group) => sum + group.activePositions, 0) + 
+                       safeIndividualConstraints.filter(c => c.isActive).length;
+  const totalConstraints = safeGroupDisplayData.length + safeIndividualConstraints.length;
+  const totalValue = safeGroupDisplayData.reduce((sum, group) => sum + group.totalValue, 0);
+  const totalStocks = safeGroupDisplayData.reduce((sum, group) => sum + group.stocks.length, 0) + safeIndividualConstraints.length;
 
   // Filter constraint groups based on search term
-  const filteredGroupDisplayData = groupDisplayData.filter(groupData => {
+  const filteredGroupDisplayData = safeGroupDisplayData.filter(groupData => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -280,8 +285,9 @@ const ConstraintPositionList: React.FC = () => {
 
   // Get stocks that match search term for a group
   const getMatchingStocks = (groupData: GroupDisplayData) => {
-    if (!searchTerm) return groupData.stocks;
-    return groupData.stocks.filter(stock =>
+    const safeStocks = Array.isArray(groupData.stocks) ? groupData.stocks : [];
+    if (!searchTerm) return safeStocks;
+    return safeStocks.filter(stock =>
       stock.symbol.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
@@ -940,14 +946,14 @@ const ConstraintPositionList: React.FC = () => {
       </div>
 
       {/* Individual Constraints */}
-      {individualConstraints.length > 0 && (
+      {safeIndividualConstraints.length > 0 && (
         <div className="mt-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Tag className="h-5 w-5" />
             Individual Stock Constraints
           </h3>
           <div className="space-y-3">
-            {individualConstraints
+            {safeIndividualConstraints
               .filter(constraint => !searchTerm || constraint.stockSymbol.toLowerCase().includes(searchTerm.toLowerCase()))
               .map((constraint) => {
                 const stockInfo = getStockInfo(constraint.stockSymbol);
