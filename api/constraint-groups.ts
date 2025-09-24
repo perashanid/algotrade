@@ -27,14 +27,14 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
         name: row.name,
         description: row.description,
         isActive: row.is_active,
-        stocks: row.stocks || [],
-        stockGroups: row.stock_groups || [],
+        stocks: JSON.parse(row.stocks || '[]'),
+        stockGroups: JSON.parse(row.stock_groups || '[]'),
         buyTriggerPercent: parseFloat(row.buy_trigger_percent),
         sellTriggerPercent: parseFloat(row.sell_trigger_percent),
         profitTriggerPercent: row.profit_trigger_percent ? parseFloat(row.profit_trigger_percent) : null,
         buyAmount: parseFloat(row.buy_amount),
         sellAmount: parseFloat(row.sell_amount),
-        stockOverrides: row.stock_overrides || {},
+        stockOverrides: JSON.parse(row.stock_overrides || '{}'),
         createdAt: row.created_at,
         updatedAt: row.updated_at
       }));
@@ -42,6 +42,192 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
       res.status(200).json({
         success: true,
         data: constraintGroups
+      });
+      return;
+    }
+
+    if (req.method === 'PUT') {
+      // Handle different PUT operations based on URL path
+      const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
+      const pathParts = pathname.split('/').filter(Boolean);
+      const groupId = pathParts[2]; // /api/constraint-groups/{id}
+      
+      if (!groupId) {
+        res.status(400).json({
+          success: false,
+          error: 'Group ID is required'
+        });
+        return;
+      }
+
+      // Check if it's a toggle operation
+      if (pathParts[3] === 'toggle') {
+        const { isActive } = req.body;
+        
+        const query = `
+          UPDATE constraint_groups 
+          SET is_active = $1, updated_at = NOW()
+          WHERE id = $2 AND user_id = $3
+          RETURNING id, user_id, name, description, is_active, stocks, stock_groups,
+                    buy_trigger_percent, sell_trigger_percent, profit_trigger_percent,
+                    buy_amount, sell_amount, stock_overrides, created_at, updated_at
+        `;
+        
+        const result = await executeQuery(query, [isActive, groupId, user.id]);
+        
+        if (result.rows.length === 0) {
+          res.status(404).json({
+            success: false,
+            error: 'Constraint group not found'
+          });
+          return;
+        }
+
+        const group = result.rows[0];
+        res.status(200).json({
+          success: true,
+          data: {
+            id: group.id,
+            userId: group.user_id,
+            name: group.name,
+            description: group.description,
+            isActive: group.is_active,
+            stocks: JSON.parse(group.stocks || '[]'),
+            stockGroups: JSON.parse(group.stock_groups || '[]'),
+            buyTriggerPercent: parseFloat(group.buy_trigger_percent),
+            sellTriggerPercent: parseFloat(group.sell_trigger_percent),
+            profitTriggerPercent: group.profit_trigger_percent ? parseFloat(group.profit_trigger_percent) : null,
+            buyAmount: parseFloat(group.buy_amount),
+            sellAmount: parseFloat(group.sell_amount),
+            stockOverrides: JSON.parse(group.stock_overrides || '{}'),
+            createdAt: group.created_at,
+            updatedAt: group.updated_at
+          }
+        });
+        return;
+      }
+
+      // Regular update operation
+      const updates = req.body;
+      const setClause: string[] = [];
+      const values: any[] = [];
+      let paramCount = 1;
+
+      if (updates.name !== undefined) {
+        setClause.push(`name = $${paramCount++}`);
+        values.push(updates.name);
+      }
+      if (updates.description !== undefined) {
+        setClause.push(`description = $${paramCount++}`);
+        values.push(updates.description);
+      }
+      if (updates.isActive !== undefined) {
+        setClause.push(`is_active = $${paramCount++}`);
+        values.push(updates.isActive);
+      }
+      if (updates.buyTriggerPercent !== undefined) {
+        setClause.push(`buy_trigger_percent = $${paramCount++}`);
+        values.push(updates.buyTriggerPercent);
+      }
+      if (updates.sellTriggerPercent !== undefined) {
+        setClause.push(`sell_trigger_percent = $${paramCount++}`);
+        values.push(updates.sellTriggerPercent);
+      }
+      if (updates.profitTriggerPercent !== undefined) {
+        setClause.push(`profit_trigger_percent = $${paramCount++}`);
+        values.push(updates.profitTriggerPercent);
+      }
+      if (updates.buyAmount !== undefined) {
+        setClause.push(`buy_amount = $${paramCount++}`);
+        values.push(updates.buyAmount);
+      }
+      if (updates.sellAmount !== undefined) {
+        setClause.push(`sell_amount = $${paramCount++}`);
+        values.push(updates.sellAmount);
+      }
+
+      if (setClause.length === 0) {
+        res.status(400).json({
+          success: false,
+          error: 'No fields to update'
+        });
+        return;
+      }
+
+      setClause.push(`updated_at = NOW()`);
+      values.push(groupId, user.id);
+
+      const query = `
+        UPDATE constraint_groups 
+        SET ${setClause.join(', ')}
+        WHERE id = $${paramCount++} AND user_id = $${paramCount++}
+        RETURNING id, user_id, name, description, is_active, stocks, stock_groups,
+                  buy_trigger_percent, sell_trigger_percent, profit_trigger_percent,
+                  buy_amount, sell_amount, stock_overrides, created_at, updated_at
+      `;
+
+      const result = await executeQuery(query, values);
+      
+      if (result.rows.length === 0) {
+        res.status(404).json({
+          success: false,
+          error: 'Constraint group not found'
+        });
+        return;
+      }
+
+      const group = result.rows[0];
+      res.status(200).json({
+        success: true,
+        data: {
+          id: group.id,
+          userId: group.user_id,
+          name: group.name,
+          description: group.description,
+          isActive: group.is_active,
+          stocks: JSON.parse(group.stocks || '[]'),
+          stockGroups: JSON.parse(group.stock_groups || '[]'),
+          buyTriggerPercent: parseFloat(group.buy_trigger_percent),
+          sellTriggerPercent: parseFloat(group.sell_trigger_percent),
+          profitTriggerPercent: group.profit_trigger_percent ? parseFloat(group.profit_trigger_percent) : null,
+          buyAmount: parseFloat(group.buy_amount),
+          sellAmount: parseFloat(group.sell_amount),
+          stockOverrides: JSON.parse(group.stock_overrides || '{}'),
+          createdAt: group.created_at,
+          updatedAt: group.updated_at
+        }
+      });
+      return;
+    }
+
+    if (req.method === 'DELETE') {
+      // Delete constraint group
+      const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
+      const pathParts = pathname.split('/').filter(Boolean);
+      const groupId = pathParts[2]; // /api/constraint-groups/{id}
+      
+      if (!groupId) {
+        res.status(400).json({
+          success: false,
+          error: 'Group ID is required'
+        });
+        return;
+      }
+
+      const query = `DELETE FROM constraint_groups WHERE id = $1 AND user_id = $2`;
+      const result = await executeQuery(query, [groupId, user.id]);
+      
+      if ((result.rowCount ?? 0) === 0) {
+        res.status(404).json({
+          success: false,
+          error: 'Constraint group not found'
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: null
       });
       return;
     }

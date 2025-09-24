@@ -31,10 +31,20 @@ async function debugHandler(req: VercelRequest, res: VercelResponse) {
       if (user) {
         try {
           const groupsResult = await executeQuery(
-            'SELECT COUNT(*) as count FROM constraint_groups WHERE user_id = $1',
+            'SELECT id, name, stocks, stock_groups FROM constraint_groups WHERE user_id = $1 LIMIT 3',
             [user.id]
           );
-          constraintGroupsTest = groupsResult.rows[0];
+          constraintGroupsTest = {
+            count: groupsResult.rows.length,
+            samples: groupsResult.rows.map((row: any) => ({
+              id: row.id,
+              name: row.name,
+              stocks: row.stocks,
+              stockGroups: row.stock_groups,
+              stocksParsed: JSON.parse(row.stocks || '[]'),
+              stockGroupsParsed: JSON.parse(row.stock_groups || '[]')
+            }))
+          };
         } catch (error) {
           constraintGroupsTest = { error: error instanceof Error ? error.message : 'Unknown error' };
         }
