@@ -108,8 +108,16 @@ export class ConstraintGroupController {
       const constraintId = req.params.id;
       const updates = req.body;
 
+      console.log('Update constraint group request:', {
+        userId,
+        constraintId,
+        updates,
+        userAgent: req.headers['user-agent']
+      });
+
       // Validate triggers if provided
       if (updates.buyTriggerPercent !== undefined && updates.buyTriggerPercent >= 0) {
+        console.log('Validation failed: Buy trigger must be negative');
         res.status(400).json({
           success: false,
           error: {
@@ -122,6 +130,7 @@ export class ConstraintGroupController {
       }
 
       if (updates.sellTriggerPercent !== undefined && updates.sellTriggerPercent <= 0) {
+        console.log('Validation failed: Sell trigger must be positive');
         res.status(400).json({
           success: false,
           error: {
@@ -133,9 +142,11 @@ export class ConstraintGroupController {
         return;
       }
 
+      console.log('Calling ConstraintGroupModel.update...');
       const constraintGroup = await ConstraintGroupModel.update(constraintId, userId, updates);
 
       if (!constraintGroup) {
+        console.log('Constraint group not found after update');
         res.status(404).json({
           success: false,
           error: {
@@ -147,6 +158,7 @@ export class ConstraintGroupController {
         return;
       }
 
+      console.log('Update successful, returning constraint group');
       res.json({
         success: true,
         data: constraintGroup,
@@ -154,11 +166,12 @@ export class ConstraintGroupController {
       } as APIResponse<ConstraintGroup>);
     } catch (error) {
       console.error('Update constraint group error:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       res.status(500).json({
         success: false,
         error: {
           code: 'UPDATE_CONSTRAINT_GROUP_ERROR',
-          message: 'Failed to update constraint group'
+          message: error instanceof Error ? error.message : 'Failed to update constraint group'
         },
         timestamp: new Date()
       });

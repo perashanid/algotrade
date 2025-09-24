@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { ConstraintGroupController } from '../controllers/ConstraintGroupController';
+import { ConstraintGroupController } from '../controllers/constraintGroupController';
 import { authenticateToken } from '../middleware/auth';
 
 const router = Router();

@@ -2,20 +2,63 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Target, BarChart3, PieChart, Activity, Calendar, RefreshCw } from 'lucide-react';
 import { constraintPositionsService } from '../../services/constraintPositions';
 import { constraintGroupsService } from '../../services/constraintGroups';
-import { portfolioService } from '../../services/portfolio';
 import { ConstraintPosition, ConstraintGroup } from '../../types';
 import PerformanceChart from './PerformanceChart';
 import ProfitLossChart from './ProfitLossChart';
 import StockPerformanceTable from './StockPerformanceTable';
+import TradingPanel from './TradingPanel';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
+
+interface RealTimeData {
+  portfolio: {
+    totalValue: number;
+    totalGainLoss: number;
+    totalGainLossPercent: number;
+    positionCount: number;
+  };
+  positions: Array<{
+    stockSymbol: string;
+    currentPrice: number;
+    quantity: number;
+    averageCost: number;
+    marketValue: number;
+    unrealizedPnl: number;
+    unrealizedPnlPercent: number;
+    isPriceStale: boolean;
+    constraintName?: string;
+  }>;
+  summary: {
+    activePositions: number;
+    profitablePositions: number;
+    losingPositions: number;
+    breakEvenPositions: number;
+  };
+  topPerformers: Array<{
+    stockSymbol: string;
+    unrealizedPnl: number;
+    unrealizedPnlPercent: number;
+    isPriceStale: boolean;
+    constraintName?: string;
+  }>;
+  bottomPerformers: Array<{
+    stockSymbol: string;
+    unrealizedPnl: number;
+    unrealizedPnlPercent: number;
+    isPriceStale: boolean;
+    constraintName?: string;
+  }>;
+}
 
 const Analytics: React.FC = () => {
   const [positions, setPositions] = useState<ConstraintPosition[]>([]);
-  const [constraintGroups, setConstraintGroups] = useState<ConstraintGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [realTimeData, setRealTimeData] = useState<RealTimeData | null>(null);
+  const [quickTradeSymbol, setQuickTradeSymbol] = useState<string>('');
+  const [quickTradeType, setQuickTradeType] = useState<'buy' | 'sell'>('buy');
 
   useEffect(() => {
     loadData();
@@ -46,20 +89,37 @@ const Analytics: React.FC = () => {
     try {
       setLoading(true);
       
-      // Refresh prices first if requested
-      if (refreshPrices) {
-        setRefreshing(true);
-        await portfolioService.refreshPrices();
+      // Load real-time analytics data
+      const realTimeResponse = await api.get('/analytics/real-time');
+      
+      if (realTimeResponse.data.success && realTimeResponse.data.data) {
+        const data: RealTimeData = realTimeResponse.data.data;
+        setRealTimeData(data);
+        
+        // Convert positions to ConstraintPosition format for compatibility
+        const constraintPositions: ConstraintPosition[] = data.positions.map((pos) => ({
+          stockSymbol: pos.stockSymbol,
+          constraintType: 'individual' as const,
+          isActive: true,
+          buyTriggerPercent: 0,
+          sellTriggerPercent: 0,
+          profitTriggerPercent: 0,
+          buyAmount: 0,
+          sellAmount: 0,
+          currentPrice: pos.currentPrice,
+          quantity: pos.quantity,
+          averageCost: pos.averageCost,
+          marketValue: pos.marketValue,
+          unrealizedPnl: pos.unrealizedPnl,
+          unrealizedPnlPercent: pos.unrealizedPnlPercent,
+          status: pos.quantity > 0 ? 'position' as const : 'watching' as const,
+          isPriceStale: pos.isPriceStale,
+          constraintName: pos.constraintName
+        }));
+        
+        setPositions(constraintPositions);
       }
       
-      // Use optimized dashboard data for better performance
-      const [dashboardData, groupsData] = await Promise.all([
-        constraintPositionsService.getDashboardData(),
-        constraintGroupsService.getConstraintGroups()
-      ]);
-      
-      setPositions(dashboardData.constraintPositions);
-      setConstraintGroups(groupsData);
       setLastUpdated(new Date());
       
       if (refreshPrices) {
@@ -68,6 +128,14 @@ const Analytics: React.FC = () => {
     } catch (error) {
       console.error('Failed to load analytics data:', error);
       toast.error('Failed to refresh analytics data');
+      
+      // Fallback to original method
+      try {
+        const dashboardData = await constraintPositionsService.getDashboardData();
+        setPositions(dashboardData.constraintPositions);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -75,7 +143,20 @@ const Analytics: React.FC = () => {
   };
 
   const handleRefresh = async () => {
+    setRefreshing(true);
     await loadData(true);
+  };
+
+  const handleQuickTrade = (symbol: string, type: 'buy' | 'sell') => {
+    setQuickTradeSymbol(symbol);
+    setQuickTradeType(type);
+    toast.success(`Quick ${type} setup for ${symbol} - Check the trading panel`);
+    
+    // Scroll to trading panel
+    const tradingPanel = document.querySelector('[data-trading-panel]');
+    if (tradingPanel) {
+      tradingPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -91,11 +172,11 @@ const Analytics: React.FC = () => {
     return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
   };
 
-  // Calculate analytics metrics
-  const totalValue = positions.reduce((sum, p) => sum + p.marketValue, 0);
-  const totalPnL = positions.reduce((sum, p) => sum + p.unrealizedPnl, 0);
-  const totalPnLPercent = totalValue > 0 ? (totalPnL / (totalValue - totalPnL)) * 100 : 0;
-  const activePositions = positions.filter(p => p.status === 'position').length;
+  // Calculate analytics metrics from real-time data or fallback to positions
+  const totalValue = realTimeData?.portfolio?.totalValue || positions.reduce((sum, p) => sum + p.marketValue, 0);
+  const totalPnL = realTimeData?.portfolio?.totalGainLoss || positions.reduce((sum, p) => sum + p.unrealizedPnl, 0);
+  const totalPnLPercent = realTimeData?.portfolio?.totalGainLossPercent || (totalValue > 0 ? (totalPnL / (totalValue - totalPnL)) * 100 : 0);
+  const activePositions = realTimeData?.summary?.activePositions || positions.filter(p => p.status === 'position').length;
   const watchingStocks = positions.filter(p => p.status === 'watching').length;
   const triggeredStocks = positions.filter(p => p.status === 'triggered').length;
   
@@ -103,12 +184,12 @@ const Analytics: React.FC = () => {
   const stalePositions = positions.filter(p => p.isPriceStale && p.status === 'position').length;
   const hasStaleData = stalePositions > 0;
 
-  const topPerformers = positions
+  const topPerformers = realTimeData?.topPerformers || positions
     .filter(p => p.status === 'position')
     .sort((a, b) => b.unrealizedPnlPercent - a.unrealizedPnlPercent)
     .slice(0, 5);
 
-  const bottomPerformers = positions
+  const bottomPerformers = realTimeData?.bottomPerformers || positions
     .filter(p => p.status === 'position')
     .sort((a, b) => a.unrealizedPnlPercent - b.unrealizedPnlPercent)
     .slice(0, 5);
@@ -248,8 +329,8 @@ const Analytics: React.FC = () => {
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      {/* Charts and Trading */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="h-5 w-5 text-gray-600 dark:text-gray-300" />
@@ -264,6 +345,21 @@ const Analytics: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">P&L Distribution</h3>
           </div>
           <ProfitLossChart positions={positions} />
+        </div>
+
+        <div data-trading-panel>
+          <TradingPanel 
+            onTradeComplete={() => {
+              loadData(true);
+              setQuickTradeSymbol(''); // Clear quick trade after completion
+            }}
+            quickTradeSymbol={quickTradeSymbol}
+            quickTradeType={quickTradeType}
+            onQuickTradeClear={() => {
+              setQuickTradeSymbol('');
+              setQuickTradeType('buy');
+            }}
+          />
         </div>
       </div>
 
@@ -335,7 +431,7 @@ const Analytics: React.FC = () => {
       {/* Detailed Stock Performance */}
       <div className="card">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Stock Performance Details</h3>
-        <StockPerformanceTable positions={positions} />
+        <StockPerformanceTable positions={positions} onQuickTrade={handleQuickTrade} />
       </div>
     </div>
   );

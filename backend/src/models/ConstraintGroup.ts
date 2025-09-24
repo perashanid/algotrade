@@ -282,8 +282,16 @@ export class ConstraintGroupModel {
       WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}
     `;
 
-    await pool.query(query, values);
-    return await this.findById(constraintId, userId);
+    console.log('Update query:', query);
+    console.log('Update values:', values);
+
+    try {
+      await pool.query(query, values);
+      return await this.findById(constraintId, userId);
+    } catch (error) {
+      console.error('Update constraint group error:', error);
+      throw error;
+    }
   }
 
   static async toggleActive(constraintId: string, userId: string, isActive: boolean): Promise<ConstraintGroup | null> {

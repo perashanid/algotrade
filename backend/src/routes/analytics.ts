@@ -4,26 +4,21 @@ import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
-// All analytics routes require authentication
+// Apply authentication to all routes
 router.use(authenticateToken);
 
-// Performance analytics
-router.get('/performance', AnalyticsController.getPerformanceMetrics);
-router.get('/performance/history', AnalyticsController.getPerformanceHistory);
-router.get('/performance/vs-benchmark', AnalyticsController.getPortfolioVsBenchmark);
+// Analytics endpoints
+router.get('/portfolio-history', AnalyticsController.getPortfolioHistory);
+router.get('/real-time', AnalyticsController.getRealTimeAnalytics);
 
-// Position analytics
-router.get('/positions/top-performers', AnalyticsController.getTopPerformers);
-router.get('/positions/worst-performers', AnalyticsController.getWorstPerformers);
+// Trading endpoints
+router.post('/buy', AnalyticsController.buyStock);
+router.post('/sell', AnalyticsController.sellStock);
 
-// Constraint analytics
-router.get('/constraints/analysis', AnalyticsController.getConstraintAnalysis);
+// Price endpoints
+router.get('/price/:symbol', AnalyticsController.getCurrentPrice);
 
-// Trade analytics
-router.get('/trades/statistics', AnalyticsController.getTradeStatistics);
-router.get('/trades/export', AnalyticsController.exportTradeHistory);
-
-// Dashboard
-router.get('/dashboard', AnalyticsController.getAnalyticsDashboard);
+// Position endpoints
+router.get('/position/:symbol', AnalyticsController.getPosition);
 
 export default router;

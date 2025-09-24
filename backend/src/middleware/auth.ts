@@ -11,10 +11,12 @@ export interface AuthRequest extends Request {
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
+    console.log(`Auth middleware: ${req.method} ${req.path}`);
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
     if (!token) {
+      console.log('Auth middleware: Missing token');
       res.status(401).json({
         success: false,
         error: {
@@ -45,6 +47,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       email: user.email
     };
 
+    console.log(`Auth middleware: Authenticated user ${user.email} (${user.id})`);
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
