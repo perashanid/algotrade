@@ -1,9 +1,8 @@
 // API Configuration utility
 export const getApiBaseUrl = () => {
-  // In production (deployed), use the backend server
+  // In production, use the environment variable for backend URL
   if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
-    // For Vercel deployment, the backend will be available at /api
-    return `${window.location.origin}/api`;
+    return import.meta.env.VITE_API_URL || 'https://your-backend-url.onrender.com/api';
   }
   
   // In development, check for custom API URL first
@@ -11,7 +10,7 @@ export const getApiBaseUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
   
-  // Default development URL - backend server
+  // Default development URL - local backend server
   return 'http://localhost:3001/api';
 };
 
