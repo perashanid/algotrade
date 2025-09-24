@@ -9,7 +9,7 @@ import ConstraintGroupCard from './ConstraintGroupCard';
 import IndividualConstraints from './IndividualConstraints';
 import ViewModeToggle from './ViewModeToggle';
 import CreateButtons from './CreateButtons';
-import ErrorBoundary from '../Common/ErrorBoundary';
+
 import { useConstraintsData } from './hooks/useConstraintsData';
 import { useConstraintActions } from './hooks/useConstraintActions';
 import { constraintGroupsService } from '../../services/constraintGroups';
@@ -123,8 +123,7 @@ const Constraints: React.FC = () => {
   }
 
   return (
-    <ErrorBoundary>
-      <div className="p-8">
+    <div className="p-8">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Trading Constraints</h1>
@@ -201,7 +200,6 @@ const Constraints: React.FC = () => {
           onSubmit={handleCreateStockGroup}
         />
       </div>
-    </ErrorBoundary>
   );
 };
 

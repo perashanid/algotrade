@@ -5,7 +5,7 @@ import PortfolioSummary from './PortfolioSummary';
 import ConstraintPositionList from './ConstraintPositionList';
 import ConstraintsSummary from './ConstraintsSummary';
 import BookedPnL from './BookedPnL';
-import SimpleErrorBoundary from '../Common/SimpleErrorBoundary';
+
 import { RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -57,8 +57,7 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <SimpleErrorBoundary>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -87,35 +86,16 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
-          <SimpleErrorBoundary fallback={
-            <div className="card p-6 text-center">
-              <p className="text-red-600 dark:text-red-400">Error loading Booked P&L</p>
-            </div>
-          }>
-            <BookedPnL />
-          </SimpleErrorBoundary>
-          <SimpleErrorBoundary fallback={
-            <div className="card p-6 text-center">
-              <p className="text-red-600 dark:text-red-400">Error loading Constraint Positions</p>
-            </div>
-          }>
-            <ConstraintPositionList />
-          </SimpleErrorBoundary>
+          <BookedPnL />
+          <ConstraintPositionList />
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <SimpleErrorBoundary fallback={
-            <div className="card p-6 text-center">
-              <p className="text-red-600 dark:text-red-400">Error loading Constraints Summary</p>
-            </div>
-          }>
-            <ConstraintsSummary />
-          </SimpleErrorBoundary>
+          <ConstraintsSummary />
         </div>
       </div>
     </div>
-    </SimpleErrorBoundary>
   );
 };
 
