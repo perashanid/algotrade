@@ -44,9 +44,19 @@ async function constraintsHandler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'PUT') {
       // Handle constraint updates
       const url = req.url || '';
+      console.log('PUT request URL:', url);
       const pathParts = url.split('/').filter(Boolean);
-      // URL format: /api/constraints/{id} or just /{id}
-      const constraintId = pathParts[pathParts.length - 1]; // Get the last part as ID
+      console.log('URL path parts:', pathParts);
+      
+      // URL format: /api/constraints/{id} or constraints/{id} or just {id}
+      let constraintId = '';
+      if (pathParts.length >= 2 && pathParts[pathParts.length - 2] === 'constraints') {
+        constraintId = pathParts[pathParts.length - 1];
+      } else if (pathParts.length === 1) {
+        constraintId = pathParts[0];
+      }
+      
+      console.log('Extracted constraint ID:', constraintId);
       
       if (!constraintId) {
         res.status(400).json({
@@ -143,9 +153,19 @@ async function constraintsHandler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'DELETE') {
       // Delete constraint
       const url = req.url || '';
+      console.log('DELETE request URL:', url);
       const pathParts = url.split('/').filter(Boolean);
-      // URL format: /api/constraints/{id} or just /{id}
-      const constraintId = pathParts[pathParts.length - 1]; // Get the last part as ID
+      console.log('URL path parts:', pathParts);
+      
+      // URL format: /api/constraints/{id} or constraints/{id} or just {id}
+      let constraintId = '';
+      if (pathParts.length >= 2 && pathParts[pathParts.length - 2] === 'constraints') {
+        constraintId = pathParts[pathParts.length - 1];
+      } else if (pathParts.length === 1) {
+        constraintId = pathParts[0];
+      }
+      
+      console.log('Extracted constraint ID:', constraintId);
       
       if (!constraintId) {
         res.status(400).json({

@@ -4,6 +4,7 @@ import { ArrowLeft, TrendingDown, TrendingUp, Target, DollarSign, Percent, Alert
 import { constraintsService } from '../../services/constraints';
 import { CreateConstraintRequest } from '../../types';
 import { useInvalidateQueries } from '../../hooks/useInvalidateQueries';
+import StockSearchInput from '../Common/StockSearchInput';
 import toast from 'react-hot-toast';
 
 const CreateConstraint: React.FC = () => {
@@ -145,19 +146,23 @@ const CreateConstraint: React.FC = () => {
               <label className="label">
                 Stock Symbol *
               </label>
-              <input
-                type="text"
-                value={formData.stockSymbol}
-                onChange={(e) => handleInputChange('stockSymbol', e.target.value.toUpperCase())}
-                className={`input ${errors.stockSymbol ? 'border-red-500' : ''}`}
-                placeholder="e.g., AAPL, GOOGL, MSFT"
-                maxLength={5}
+              <StockSearchInput
+                onStockSelect={(stock) => handleInputChange('stockSymbol', stock)}
+                placeholder="Search by company name or symbol (e.g., Apple, AAPL)..."
+                className={errors.stockSymbol ? 'border-red-500' : ''}
               />
+              {formData.stockSymbol && (
+                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    Selected: <strong>{formData.stockSymbol}</strong>
+                  </p>
+                </div>
+              )}
               {errors.stockSymbol && (
                 <p className="error-text">{errors.stockSymbol}</p>
               )}
               <p className="text-sm text-gray-500 mt-1">
-                Enter the stock ticker symbol (1-5 letters)
+                Search and select a stock from the dropdown
               </p>
             </div>
           </div>

@@ -49,8 +49,18 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
     if (req.method === 'PUT') {
       // Handle different PUT operations based on URL path
       const url = req.url || '';
+      console.log('PUT request URL:', url);
       const pathParts = url.split('/').filter(Boolean);
-      const groupId = pathParts[pathParts.length - 1]; // Get the last part as ID
+      console.log('URL path parts:', pathParts);
+      
+      // Extract group ID - look for constraint-groups in the path
+      let groupId = '';
+      const constraintGroupsIndex = pathParts.findIndex(part => part === 'constraint-groups');
+      if (constraintGroupsIndex >= 0 && constraintGroupsIndex + 1 < pathParts.length) {
+        groupId = pathParts[constraintGroupsIndex + 1];
+      }
+      
+      console.log('Extracted group ID:', groupId);
       
       if (!groupId) {
         res.status(400).json({
@@ -263,8 +273,17 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
 
     if (req.method === 'DELETE') {
       const url = req.url || '';
+      console.log('DELETE request URL:', url);
       const pathParts = url.split('/').filter(Boolean);
-      const groupId = pathParts[2]; // /api/constraint-groups/{id}
+      console.log('URL path parts:', pathParts);
+      // Extract group ID - look for constraint-groups in the path
+      let groupId = '';
+      const constraintGroupsIndex = pathParts.findIndex(part => part === 'constraint-groups');
+      if (constraintGroupsIndex >= 0 && constraintGroupsIndex + 1 < pathParts.length) {
+        groupId = pathParts[constraintGroupsIndex + 1];
+      }
+      
+      console.log('Extracted group ID:', groupId);
       
       if (!groupId) {
         res.status(400).json({
@@ -362,7 +381,9 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
 
     if (req.method === 'POST') {
       const url = req.url || '';
+      console.log('POST request URL:', url);
       const pathParts = url.split('/').filter(Boolean);
+      console.log('URL path parts:', pathParts);
       
       // Handle adding stock to group: POST /api/constraint-groups/{id}/stocks
       if (pathParts.length === 4 && pathParts[3] === 'stocks') {
