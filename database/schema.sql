@@ -64,11 +64,41 @@ CREATE TABLE IF NOT EXISTS constraint_groups (
     buy_amount DECIMAL(15,2) NOT NULL,
     sell_amount DECIMAL(15,2) NOT NULL,
     is_active BOOLEAN DEFAULT true,
-    stocks TEXT[] NOT NULL DEFAULT '{}',
-    stock_groups UUID[] NOT NULL DEFAULT '{}',
-    stock_overrides JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Constraint stocks table (many-to-many relationship)
+CREATE TABLE IF NOT EXISTS constraint_stocks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    constraint_group_id UUID NOT NULL REFERENCES constraint_groups(id) ON DELETE CASCADE,
+    stock_symbol VARCHAR(10) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(constraint_group_id, stock_symbol)
+);
+
+-- Constraint stock groups table (many-to-many relationship)
+CREATE TABLE IF NOT EXISTS constraint_stock_groups (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    constraint_group_id UUID NOT NULL REFERENCES constraint_groups(id) ON DELETE CASCADE,
+    stock_group_id UUID NOT NULL REFERENCES stock_groups(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(constraint_group_id, stock_group_id)
+);
+
+-- Constraint stock overrides table (individual stock settings within a group)
+CREATE TABLE IF NOT EXISTS constraint_stock_overrides (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    constraint_group_id UUID NOT NULL REFERENCES constraint_groups(id) ON DELETE CASCADE,
+    stock_symbol VARCHAR(10) NOT NULL,
+    buy_trigger_percent DECIMAL(5,2),
+    sell_trigger_percent DECIMAL(5,2),
+    profit_trigger_percent DECIMAL(5,2),
+    buy_amount DECIMAL(15,2),
+    sell_amount DECIMAL(15,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(constraint_group_id, stock_symbol)
 );
 
 -- Trade history table
@@ -91,6 +121,13 @@ CREATE INDEX IF NOT EXISTS idx_positions_symbol ON positions(stock_symbol);
 CREATE INDEX IF NOT EXISTS idx_constraints_user_id ON constraints(user_id);
 CREATE INDEX IF NOT EXISTS idx_constraints_symbol ON constraints(stock_symbol);
 CREATE INDEX IF NOT EXISTS idx_constraints_active ON constraints(is_active);
+CREATE INDEX IF NOT EXISTS idx_constraint_groups_user_id ON constraint_groups(user_id);
+CREATE INDEX IF NOT EXISTS idx_constraint_stocks_group_id ON constraint_stocks(constraint_group_id);
+CREATE INDEX IF NOT EXISTS idx_constraint_stocks_symbol ON constraint_stocks(stock_symbol);
+CREATE INDEX IF NOT EXISTS idx_constraint_stock_groups_group_id ON constraint_stock_groups(constraint_group_id);
+CREATE INDEX IF NOT EXISTS idx_constraint_stock_groups_stock_group_id ON constraint_stock_groups(stock_group_id);
+CREATE INDEX IF NOT EXISTS idx_constraint_stock_overrides_group_id ON constraint_stock_overrides(constraint_group_id);
+CREATE INDEX IF NOT EXISTS idx_constraint_stock_overrides_symbol ON constraint_stock_overrides(stock_symbol);
 CREATE INDEX IF NOT EXISTS idx_trade_history_user_id ON trade_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_trade_history_symbol ON trade_history(stock_symbol);
 CREATE INDEX IF NOT EXISTS idx_trade_history_executed_at ON trade_history(executed_at);
@@ -114,4 +151,7 @@ CREATE TRIGGER update_stock_groups_updated_at BEFORE UPDATE ON stock_groups
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_constraint_groups_updated_at BEFORE UPDATE ON constraint_groups
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_constraint_stock_overrides_updated_at BEFORE UPDATE ON constraint_stock_overrides
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

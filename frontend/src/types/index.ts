@@ -54,6 +54,8 @@ export interface ConstraintPosition {
   unrealizedPnl: number;
   unrealizedPnlPercent: number;
   status: 'watching' | 'position' | 'triggered';
+  lastUpdated?: Date;
+  isPriceStale?: boolean;
 }
 
 export interface ClosedPosition {

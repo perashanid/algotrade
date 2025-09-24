@@ -9,10 +9,10 @@ interface ConstraintGroupWithIds extends Omit<ConstraintGroup, 'stockGroups'> {
 export class ConstraintGroupModel {
   static async create(userId: string, constraintData: CreateConstraintGroupRequest): Promise<ConstraintGroup> {
     const client = await pool.connect();
-    
+
     try {
       await client.query('BEGIN');
-      
+
       // Create the constraint group
       const constraintQuery = `
         INSERT INTO constraint_groups (
@@ -23,7 +23,7 @@ export class ConstraintGroupModel {
         RETURNING id, user_id, name, description, buy_trigger_percent, sell_trigger_percent,
                   profit_trigger_percent, buy_amount, sell_amount, is_active, created_at, updated_at
       `;
-      
+
       const constraintResult = await client.query(constraintQuery, [
         userId,
         constraintData.name,
@@ -34,9 +34,9 @@ export class ConstraintGroupModel {
         constraintData.buyAmount,
         constraintData.sellAmount
       ]);
-      
+
       const constraint = constraintResult.rows[0];
-      
+
       // Add individual stocks
       for (const stock of constraintData.stocks) {
         await client.query(
@@ -44,7 +44,7 @@ export class ConstraintGroupModel {
           [constraint.id, stock.toUpperCase()]
         );
       }
-      
+
       // Add stock groups
       for (const groupId of constraintData.stockGroups) {
         await client.query(
@@ -52,9 +52,9 @@ export class ConstraintGroupModel {
           [constraint.id, groupId]
         );
       }
-      
+
       await client.query('COMMIT');
-      
+
       // For create, we return a simple constraint group with empty stock groups
       // since we don't need to populate the full objects for creation
       const groupWithIds = this.mapRowToConstraintGroup({
@@ -62,7 +62,7 @@ export class ConstraintGroupModel {
         stocks: constraintData.stocks,
         stock_groups: constraintData.stockGroups
       });
-      
+
       // Convert to full ConstraintGroup with empty stock groups array
       return {
         ...groupWithIds,
@@ -93,13 +93,13 @@ export class ConstraintGroupModel {
                cg.buy_amount, cg.sell_amount, cg.is_active, cg.created_at, cg.updated_at
       ORDER BY cg.created_at DESC
     `;
-    
+
     const result = await pool.query(query, [userId]);
     const constraintGroupsWithIds = result.rows.map(row => this.mapRowToConstraintGroup(row));
-    
+
     // Convert to full ConstraintGroup objects with populated stock groups
     const constraintGroups: ConstraintGroup[] = [];
-    
+
     for (const groupWithIds of constraintGroupsWithIds) {
       // Load full stock group objects
       let fullStockGroups: StockGroup[] = [];
@@ -110,7 +110,7 @@ export class ConstraintGroupModel {
           WHERE id = ANY($1) AND user_id = $2
         `;
         const stockGroupsResult = await pool.query(stockGroupsQuery, [groupWithIds.stockGroups, userId]);
-        
+
         // Map the stock groups with parsed stocks
         fullStockGroups = stockGroupsResult.rows.map((sgRow: any) => {
           let stocks = [];
@@ -120,7 +120,7 @@ export class ConstraintGroupModel {
           } catch (e) {
             stocks = [];
           }
-          
+
           return {
             id: sgRow.id,
             userId: sgRow.user_id,
@@ -133,16 +133,16 @@ export class ConstraintGroupModel {
           };
         });
       }
-      
+
       // Create the full ConstraintGroup object
       const fullGroup: ConstraintGroup = {
         ...groupWithIds,
         stockGroups: fullStockGroups
       };
-      
+
       constraintGroups.push(fullGroup);
     }
-    
+
     // Load individual stock overrides for each group
     for (const group of constraintGroups) {
       const overridesQuery = `
@@ -153,7 +153,7 @@ export class ConstraintGroupModel {
       `;
       const overridesResult = await pool.query(overridesQuery, [group.id]);
       group.stockOverrides = {};
-      
+
       for (const override of overridesResult.rows) {
         group.stockOverrides[override.stock_symbol] = {
           buyTriggerPercent: override.buy_trigger_percent ? parseFloat(override.buy_trigger_percent) : undefined,
@@ -164,7 +164,7 @@ export class ConstraintGroupModel {
         };
       }
     }
-    
+
     return constraintGroups;
   }
 
@@ -184,12 +184,12 @@ export class ConstraintGroupModel {
                cg.buy_trigger_percent, cg.sell_trigger_percent, cg.profit_trigger_percent,
                cg.buy_amount, cg.sell_amount, cg.is_active, cg.created_at, cg.updated_at
     `;
-    
+
     const result = await pool.query(query, [constraintId, userId]);
     if (!result.rows[0]) return null;
-    
+
     const groupWithIds = this.mapRowToConstraintGroup(result.rows[0]);
-    
+
     // Load full stock group objects
     let fullStockGroups: StockGroup[] = [];
     if (groupWithIds.stockGroups.length > 0) {
@@ -199,7 +199,7 @@ export class ConstraintGroupModel {
         WHERE id = ANY($1) AND user_id = $2
       `;
       const stockGroupsResult = await pool.query(stockGroupsQuery, [groupWithIds.stockGroups, userId]);
-      
+
       fullStockGroups = stockGroupsResult.rows.map((sgRow: any) => {
         let stocks = [];
         try {
@@ -208,7 +208,7 @@ export class ConstraintGroupModel {
         } catch (e) {
           stocks = [];
         }
-        
+
         return {
           id: sgRow.id,
           userId: sgRow.user_id,
@@ -221,23 +221,45 @@ export class ConstraintGroupModel {
         };
       });
     }
-    
-    return {
+
+    const fullGroup: ConstraintGroup = {
       ...groupWithIds,
       stockGroups: fullStockGroups
     };
+
+    // Load individual stock overrides
+    const overridesQuery = `
+      SELECT stock_symbol, buy_trigger_percent, sell_trigger_percent, 
+             profit_trigger_percent, buy_amount, sell_amount
+      FROM constraint_stock_overrides
+      WHERE constraint_group_id = $1
+    `;
+    const overridesResult = await pool.query(overridesQuery, [constraintId]);
+    fullGroup.stockOverrides = {};
+
+    for (const override of overridesResult.rows) {
+      fullGroup.stockOverrides[override.stock_symbol] = {
+        buyTriggerPercent: override.buy_trigger_percent ? parseFloat(override.buy_trigger_percent) : undefined,
+        sellTriggerPercent: override.sell_trigger_percent ? parseFloat(override.sell_trigger_percent) : undefined,
+        profitTriggerPercent: override.profit_trigger_percent ? parseFloat(override.profit_trigger_percent) : undefined,
+        buyAmount: override.buy_amount ? parseFloat(override.buy_amount) : undefined,
+        sellAmount: override.sell_amount ? parseFloat(override.sell_amount) : undefined
+      };
+    }
+
+    return fullGroup;
   }
 
   static async update(constraintId: string, userId: string, updates: Partial<ConstraintGroup>): Promise<ConstraintGroup | null> {
     const allowedFields = [
-      'name', 'description', 'buy_trigger_percent', 'sell_trigger_percent', 
+      'name', 'description', 'buy_trigger_percent', 'sell_trigger_percent',
       'profit_trigger_percent', 'buy_amount', 'sell_amount', 'is_active'
     ];
-    
+
     const updateFields: string[] = [];
     const values: any[] = [];
     let paramIndex = 1;
-    
+
     Object.entries(updates).forEach(([key, value]) => {
       const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
       if (allowedFields.includes(dbField) && value !== undefined) {
@@ -246,20 +268,20 @@ export class ConstraintGroupModel {
         paramIndex++;
       }
     });
-    
+
     if (updateFields.length === 0) {
       return await this.findById(constraintId, userId);
     }
-    
+
     updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(constraintId, userId);
-    
+
     const query = `
       UPDATE constraint_groups
       SET ${updateFields.join(', ')}
       WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}
     `;
-    
+
     await pool.query(query, values);
     return await this.findById(constraintId, userId);
   }
@@ -270,15 +292,15 @@ export class ConstraintGroupModel {
       SET is_active = $1, updated_at = CURRENT_TIMESTAMP
       WHERE id = $2 AND user_id = $3
     `;
-    
+
     await pool.query(query, [isActive, constraintId, userId]);
     return await this.findById(constraintId, userId);
   }
 
   static async updateStockConstraint(
-    constraintId: string, 
-    userId: string, 
-    stockSymbol: string, 
+    constraintId: string,
+    userId: string,
+    stockSymbol: string,
     constraints: {
       buyTriggerPercent?: number;
       sellTriggerPercent?: number;
@@ -292,11 +314,11 @@ export class ConstraintGroupModel {
       'SELECT id FROM constraint_groups WHERE id = $1 AND user_id = $2',
       [constraintId, userId]
     );
-    
+
     if (groupExists.rows.length === 0) {
       throw new Error('Constraint group not found');
     }
-    
+
     // Upsert the stock override
     const query = `
       INSERT INTO constraint_stock_overrides (
@@ -313,7 +335,7 @@ export class ConstraintGroupModel {
         sell_amount = EXCLUDED.sell_amount,
         updated_at = CURRENT_TIMESTAMP
     `;
-    
+
     await pool.query(query, [
       constraintId,
       stockSymbol.toUpperCase(),
@@ -323,7 +345,7 @@ export class ConstraintGroupModel {
       constraints.buyAmount,
       constraints.sellAmount
     ]);
-    
+
     return true;
   }
 
@@ -333,16 +355,16 @@ export class ConstraintGroupModel {
       'SELECT id FROM constraint_groups WHERE id = $1 AND user_id = $2',
       [constraintId, userId]
     );
-    
+
     if (groupExists.rows.length === 0) {
       throw new Error('Constraint group not found');
     }
-    
+
     const query = `
       DELETE FROM constraint_stock_overrides 
       WHERE constraint_group_id = $1 AND stock_symbol = $2
     `;
-    
+
     const result = await pool.query(query, [constraintId, stockSymbol.toUpperCase()]);
     return (result.rowCount ?? 0) > 0;
   }
@@ -353,19 +375,19 @@ export class ConstraintGroupModel {
       'SELECT id FROM constraint_groups WHERE id = $1 AND user_id = $2',
       [constraintId, userId]
     );
-    
+
     if (groupExists.rows.length === 0) {
       throw new Error('Constraint group not found');
     }
 
     const upperStockSymbol = stockSymbol.toUpperCase();
-    
+
     // Check if stock is already in the group
     const existingStock = await pool.query(
       'SELECT id FROM constraint_stocks WHERE constraint_group_id = $1 AND stock_symbol = $2',
       [constraintId, upperStockSymbol]
     );
-    
+
     if (existingStock.rows.length > 0) {
       throw new Error('Stock is already in this group');
     }
@@ -375,7 +397,7 @@ export class ConstraintGroupModel {
       INSERT INTO constraint_stocks (constraint_group_id, stock_symbol)
       VALUES ($1, $2)
     `;
-    
+
     await pool.query(query, [constraintId, upperStockSymbol]);
     return true;
   }
@@ -386,19 +408,19 @@ export class ConstraintGroupModel {
       'SELECT id FROM constraint_groups WHERE id = $1 AND user_id = $2',
       [constraintId, userId]
     );
-    
+
     if (groupExists.rows.length === 0) {
       throw new Error('Constraint group not found');
     }
 
     const upperStockSymbol = stockSymbol.toUpperCase();
-    
+
     // Remove the stock from the constraint_stocks table
     const query = `
       DELETE FROM constraint_stocks 
       WHERE constraint_group_id = $1 AND stock_symbol = $2
     `;
-    
+
     const result = await pool.query(query, [constraintId, upperStockSymbol]);
 
     // Also remove any stock-specific overrides for this stock
@@ -406,7 +428,7 @@ export class ConstraintGroupModel {
       'DELETE FROM constraint_stock_overrides WHERE constraint_group_id = $1 AND stock_symbol = $2',
       [constraintId, upperStockSymbol]
     );
-    
+
     return (result.rowCount ?? 0) > 0;
   }
 
