@@ -3,7 +3,10 @@ import { AuthResponse, LoginRequest, RegisterRequest, User, APIResponse } from '
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await api.post<APIResponse<AuthResponse>>('/auth/login', credentials);
+    const response = await api.post<APIResponse<AuthResponse>>('/auth', {
+      action: 'login',
+      ...credentials
+    });
     
     if (response.data.success && response.data.data) {
       const { token, user } = response.data.data;
@@ -16,7 +19,10 @@ export const authService = {
   },
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await api.post<APIResponse<AuthResponse>>('/auth/register', userData);
+    const response = await api.post<APIResponse<AuthResponse>>('/auth', {
+      action: 'register',
+      ...userData
+    });
     
     if (response.data.success && response.data.data) {
       const { token, user } = response.data.data;
