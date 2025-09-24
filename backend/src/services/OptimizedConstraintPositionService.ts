@@ -22,6 +22,8 @@ export interface OptimizedConstraintPosition {
   hasCustomTriggers?: boolean;
   groupId?: string;
   groupName?: string;
+  lastUpdated?: Date;
+  isPriceStale?: boolean;
 }
 
 export interface OptimizedGroupSummary {
@@ -148,6 +150,7 @@ export class OptimizedConstraintPositionService {
           COALESCE(p.quantity, 0) as quantity,
           COALESCE(p.average_cost, 0) as average_cost,
           COALESCE(p.current_price, 0) as current_price,
+          p.last_updated,
           COALESCE(p.quantity * p.current_price, 0) as market_value,
           COALESCE(
             (p.quantity * p.current_price) - (p.quantity * p.average_cost), 
@@ -161,7 +164,12 @@ export class OptimizedConstraintPositionService {
           CASE 
             WHEN COALESCE(p.quantity, 0) > 0 THEN 'position'
             ELSE 'watching'
-          END as status
+          END as status,
+          CASE 
+            WHEN p.last_updated IS NULL THEN true
+            WHEN p.last_updated < (CURRENT_TIMESTAMP - INTERVAL '5 minutes') THEN true
+            ELSE false
+          END as is_price_stale
         FROM all_constraints ac
         LEFT JOIN positions p ON p.stock_symbol = ac.stock_symbol AND p.user_id = $1
         ORDER BY 
@@ -191,7 +199,9 @@ export class OptimizedConstraintPositionService {
         status: row.status as 'position' | 'watching',
         hasCustomTriggers: row.has_custom_triggers,
         groupId: row.group_id,
-        groupName: row.group_name
+        groupName: row.group_name,
+        lastUpdated: row.last_updated ? new Date(row.last_updated) : undefined,
+        isPriceStale: row.is_price_stale || false
       }));
 
     } catch (error) {

@@ -30,6 +30,57 @@ export interface ProcessedGroupData {
 export const constraintPositionsService = {
   async getConstraintPositions(): Promise<ConstraintPosition[]> {
     try {
+      // Use the optimized backend endpoint for better performance and real-time data
+      const response = await fetch('/api/optimized-constraints/positions', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch constraint positions');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // Map the optimized backend response to the frontend format
+        return result.data.map((item: any) => ({
+          stockSymbol: item.stockSymbol,
+          constraintId: item.constraintId,
+          constraintName: item.constraintName,
+          constraintType: item.constraintType,
+          isActive: item.isActive,
+          buyTriggerPercent: item.buyTriggerPercent,
+          sellTriggerPercent: item.sellTriggerPercent,
+          profitTriggerPercent: item.profitTriggerPercent,
+          buyAmount: item.buyAmount,
+          sellAmount: item.sellAmount,
+          currentPrice: item.currentPrice,
+          quantity: item.quantity,
+          averageCost: item.averageCost,
+          marketValue: item.marketValue,
+          unrealizedPnl: item.unrealizedPnl,
+          unrealizedPnlPercent: item.unrealizedPnlPercent,
+          status: item.status,
+          lastUpdated: item.lastUpdated ? new Date(item.lastUpdated) : undefined,
+          isPriceStale: item.isPriceStale || false
+        }));
+      }
+
+      throw new Error('Invalid response format');
+    } catch (error) {
+      console.error('Error getting constraint positions:', error);
+      // Fallback to the original implementation if the optimized endpoint fails
+      return this.getConstraintPositionsFallback();
+    }
+  },
+
+  // Fallback method using the original implementation
+  async getConstraintPositionsFallback(): Promise<ConstraintPosition[]> {
+    try {
       // Get all data in parallel
       const [constraints, constraintGroups, portfolio] = await Promise.all([
         constraintsService.getConstraints(),
@@ -466,5 +517,83 @@ export const constraintPositionsService = {
     }
 
     return Array.from(allStocks).sort();
+  },
+
+  // Get optimized dashboard data directly from backend
+  async getDashboardData(): Promise<{
+    constraintPositions: ConstraintPosition[];
+    totalPositions: number;
+    totalWatching: number;
+    totalValue: number;
+    totalUnrealizedPnl: number;
+  }> {
+    try {
+      const response = await fetch('/api/optimized-constraints/dashboard', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        const data = result.data;
+        
+        // Map constraint positions to frontend format
+        const constraintPositions = data.constraintPositions.map((item: any) => ({
+          stockSymbol: item.stockSymbol,
+          constraintId: item.constraintId,
+          constraintName: item.constraintName,
+          constraintType: item.constraintType,
+          isActive: item.isActive,
+          buyTriggerPercent: item.buyTriggerPercent,
+          sellTriggerPercent: item.sellTriggerPercent,
+          profitTriggerPercent: item.profitTriggerPercent,
+          buyAmount: item.buyAmount,
+          sellAmount: item.sellAmount,
+          currentPrice: item.currentPrice,
+          quantity: item.quantity,
+          averageCost: item.averageCost,
+          marketValue: item.marketValue,
+          unrealizedPnl: item.unrealizedPnl,
+          unrealizedPnlPercent: item.unrealizedPnlPercent,
+          status: item.status,
+          lastUpdated: item.lastUpdated ? new Date(item.lastUpdated) : undefined,
+          isPriceStale: item.isPriceStale || false
+        }));
+
+        return {
+          constraintPositions,
+          totalPositions: data.totalPositions,
+          totalWatching: data.totalWatching,
+          totalValue: data.totalValue,
+          totalUnrealizedPnl: data.totalUnrealizedPnl
+        };
+      }
+
+      throw new Error('Invalid response format');
+    } catch (error) {
+      console.error('Error getting dashboard data:', error);
+      // Fallback to regular constraint positions
+      const constraintPositions = await this.getConstraintPositions();
+      const totalPositions = constraintPositions.filter(cp => cp.status === 'position').length;
+      const totalWatching = constraintPositions.filter(cp => cp.status === 'watching').length;
+      const totalValue = constraintPositions.reduce((sum, cp) => sum + cp.marketValue, 0);
+      const totalUnrealizedPnl = constraintPositions.reduce((sum, cp) => sum + cp.unrealizedPnl, 0);
+
+      return {
+        constraintPositions,
+        totalPositions,
+        totalWatching,
+        totalValue,
+        totalUnrealizedPnl
+      };
+    }
   }
 };

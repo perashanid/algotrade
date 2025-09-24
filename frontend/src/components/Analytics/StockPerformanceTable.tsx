@@ -138,8 +138,11 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
           {sortedPositions.map((position) => (
             <tr key={position.stockSymbol} className="hover:bg-gray-50 dark:hover:bg-gray-700">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
+                <div className="flex items-center gap-2">
                   <div className="font-medium text-gray-900 dark:text-white">{position.stockSymbol}</div>
+                  {position.isPriceStale && (
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Price data is stale"></div>
+                  )}
                   {position.currentPrice && (
                     <div className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                       ${position.currentPrice.toFixed(2)}
