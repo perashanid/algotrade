@@ -1,310 +1,467 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { PerformanceAnalyticsService } from '../services/PerformanceAnalyticsService';
-import { TradeHistoryModel } from '../models/TradeHistory';
+import { PortfolioService } from '../services/PortfolioService';
+import { PortfolioHistoryModel } from '../models/PortfolioHistory';
+import { MarketDataService } from '../services/MarketDataService';
+import { PositionModel } from '../models/Position';
 
 export class AnalyticsController {
-  static async getPerformanceMetrics(req: AuthRequest, res: Response): Promise<void> {
+  static async getPortfolioHistory(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user!.id;
-      const { timeRange } = req.query;
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'User not authenticated'
+          }
+        });
+        return;
+      }
 
-      const performance = await PerformanceAnalyticsService.calculateDetailedPerformance(
-        userId,
-        timeRange as string || '1Y'
-      );
+      const timeRange = (req.query.timeRange as '7d' | '30d' | '90d' | '1y') || '30d';
+      const historicalData = await PortfolioHistoryModel.getHistoricalData(userId, timeRange);
+
+      // If no historical data, create initial snapshot
+      if (historicalData.length === 0) {
+        const portfolio = await PortfolioService.getPortfolio(userId);
+        await PortfolioHistoryModel.createSnapshot(
+          userId,
+          portfolio.totalValue,
+          portfolio.totalGainLoss,
+          portfolio.totalGainLossPercent,
+          portfolio.positions.length
+        );
+        
+        // Return the current portfolio as single data point
+        res.json({
+          success: true,
+          data: [{
+            timestamp: new Date(),
+            totalValue: portfolio.totalValue,
+            totalGainLoss: portfolio.totalGainLoss,
+            totalGainLossPercent: portfolio.totalGainLossPercent,
+            positionCount: portfolio.positions.length
+          }]
+        });
+        return;
+      }
+
+      // Format data for frontend
+      const formattedData = historicalData.map(snapshot => ({
+        timestamp: snapshot.timestamp,
+        totalValue: snapshot.totalValue,
+        totalGainLoss: snapshot.totalGainLoss,
+        totalGainLossPercent: snapshot.totalGainLossPercent,
+        positionCount: snapshot.positionCount
+      }));
 
       res.json({
         success: true,
-        data: performance,
-        timestamp: new Date()
+        data: formattedData
       });
+
     } catch (error) {
-      console.error('Get performance metrics error:', error);
+      console.error('Error getting portfolio history:', error);
       res.status(500).json({
         success: false,
         error: {
-          code: 'PERFORMANCE_METRICS_ERROR',
-          message: 'Failed to fetch performance metrics'
-        },
-        timestamp: new Date()
-      });
-    }
-  }
-
-  static async getPortfolioVsBenchmark(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const userId = req.user!.id;
-      const { timeRange } = req.query;
-
-      const comparison = await PerformanceAnalyticsService.getPortfolioVsBenchmark(
-        userId,
-        timeRange as string || '1M'
-      );
-
-      res.json({
-        success: true,
-        data: comparison,
-        timestamp: new Date()
-      });
-    } catch (error) {
-      console.error('Get portfolio vs benchmark error:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'BENCHMARK_COMPARISON_ERROR',
-          message: 'Failed to fetch benchmark comparison'
-        },
-        timestamp: new Date()
-      });
-    }
-  }
-
-  static async getPerformanceHistory(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const userId = req.user!.id;
-      const { days } = req.query;
-
-      const history = await PerformanceAnalyticsService.getPerformanceHistory(
-        userId,
-        parseInt(days as string) || 30
-      );
-
-      res.json({
-        success: true,
-        data: history,
-        timestamp: new Date()
-      });
-    } catch (error) {
-      console.error('Get performance history error:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'PERFORMANCE_HISTORY_ERROR',
-          message: 'Failed to fetch performance history'
-        },
-        timestamp: new Date()
-      });
-    }
-  }
-
-  static async getTopPerformers(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const userId = req.user!.id;
-      const { limit } = req.query;
-
-      const topPerformers = await PerformanceAnalyticsService.getTopPerformingPositions(
-        userId,
-        parseInt(limit as string) || 5
-      );
-
-      res.json({
-        success: true,
-        data: topPerformers,
-        timestamp: new Date()
-      });
-    } catch (error) {
-      console.error('Get top performers error:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'TOP_PERFORMERS_ERROR',
-          message: 'Failed to fetch top performers'
-        },
-        timestamp: new Date()
-      });
-    }
-  }
-
-  static async getWorstPerformers(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const userId = req.user!.id;
-      const { limit } = req.query;
-
-      const worstPerformers = await PerformanceAnalyticsService.getWorstPerformingPositions(
-        userId,
-        parseInt(limit as string) || 5
-      );
-
-      res.json({
-        success: true,
-        data: worstPerformers,
-        timestamp: new Date()
-      });
-    } catch (error) {
-      console.error('Get worst performers error:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'WORST_PERFORMERS_ERROR',
-          message: 'Failed to fetch worst performers'
-        },
-        timestamp: new Date()
-      });
-    }
-  }
-
-  static async getConstraintAnalysis(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const userId = req.user!.id;
-
-      const analysis = await PerformanceAnalyticsService.getConstraintPerformanceAnalysis(userId);
-
-      res.json({
-        success: true,
-        data: analysis,
-        timestamp: new Date()
-      });
-    } catch (error) {
-      console.error('Get constraint analysis error:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'CONSTRAINT_ANALYSIS_ERROR',
-          message: 'Failed to fetch constraint analysis'
-        },
-        timestamp: new Date()
-      });
-    }
-  }
-
-  static async getTradeStatistics(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const userId = req.user!.id;
-      const { startDate, endDate } = req.query;
-
-      let start: Date | undefined;
-      let end: Date | undefined;
-
-      if (startDate) {
-        start = new Date(startDate as string);
-        if (isNaN(start.getTime())) {
-          res.status(400).json({
-            success: false,
-            error: {
-              code: 'INVALID_START_DATE',
-              message: 'Invalid start date format'
-            },
-            timestamp: new Date()
-          });
-          return;
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to get portfolio history',
+          details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
         }
+      });
+    }
+  }
+
+  static async getRealTimeAnalytics(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'User not authenticated'
+          }
+        });
+        return;
       }
 
-      if (endDate) {
-        end = new Date(endDate as string);
-        if (isNaN(end.getTime())) {
-          res.status(400).json({
-            success: false,
-            error: {
-              code: 'INVALID_END_DATE',
-              message: 'Invalid end date format'
-            },
-            timestamp: new Date()
-          });
-          return;
-        }
+      // Get current portfolio with fresh prices (with error handling)
+      try {
+        await PortfolioService.updateAllPositionPrices();
+      } catch (priceError) {
+        console.warn('Failed to update all position prices, continuing with cached prices:', priceError);
       }
+      
+      const portfolio = await PortfolioService.getPortfolio(userId);
+      const positions = await PositionModel.findByUserId(userId);
 
-      const statistics = await TradeHistoryModel.getTradeStatistics(userId, start, end);
+      // Calculate additional analytics
+      const activePositions = positions.filter(p => p.quantity > 0);
+      const profitablePositions = activePositions.filter(p => {
+        const currentPrice = p.currentPrice || p.averageCost;
+        return currentPrice > p.averageCost;
+      });
+      const losingPositions = activePositions.filter(p => {
+        const currentPrice = p.currentPrice || p.averageCost;
+        return currentPrice < p.averageCost;
+      });
+
+      // Top and bottom performers
+      const performanceData = activePositions.map(p => {
+        const currentPrice = p.currentPrice || p.averageCost;
+        const gainLossPercent = p.averageCost > 0 ? ((currentPrice - p.averageCost) / p.averageCost) * 100 : 0;
+        const unrealizedPnl = p.quantity * (currentPrice - p.averageCost);
+        
+        return {
+          stockSymbol: p.stockSymbol,
+          currentPrice,
+          quantity: p.quantity,
+          averageCost: p.averageCost,
+          marketValue: p.quantity * currentPrice,
+          unrealizedPnl,
+          unrealizedPnlPercent: gainLossPercent,
+          isPriceStale: p.lastUpdated ? (Date.now() - new Date(p.lastUpdated).getTime()) > 5 * 60 * 1000 : true
+        };
+      }).sort((a, b) => b.unrealizedPnlPercent - a.unrealizedPnlPercent);
+
+      const topPerformers = performanceData.slice(0, 5);
+      const bottomPerformers = performanceData.slice(-5).reverse();
+
+      // Sector allocation (simplified - would need sector data)
+      const sectorAllocation = AnalyticsController.calculateSectorAllocation(activePositions);
 
       res.json({
         success: true,
-        data: statistics,
-        timestamp: new Date()
+        data: {
+          portfolio: {
+            totalValue: portfolio.totalValue,
+            totalGainLoss: portfolio.totalGainLoss,
+            totalGainLossPercent: portfolio.totalGainLossPercent,
+            positionCount: activePositions.length
+          },
+          positions: performanceData,
+          summary: {
+            activePositions: activePositions.length,
+            profitablePositions: profitablePositions.length,
+            losingPositions: losingPositions.length,
+            breakEvenPositions: activePositions.length - profitablePositions.length - losingPositions.length
+          },
+          topPerformers,
+          bottomPerformers,
+          sectorAllocation,
+          lastUpdated: new Date()
+        }
       });
+
     } catch (error) {
-      console.error('Get trade statistics error:', error);
+      console.error('Error getting real-time analytics:', error);
       res.status(500).json({
         success: false,
         error: {
-          code: 'TRADE_STATISTICS_ERROR',
-          message: 'Failed to fetch trade statistics'
-        },
-        timestamp: new Date()
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to get real-time analytics',
+          details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+        }
       });
     }
   }
 
-  static async exportTradeHistory(req: AuthRequest, res: Response): Promise<void> {
+  static async buyStock(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user!.id;
-      const { startDate, endDate } = req.query;
-
-      let start: Date | undefined;
-      let end: Date | undefined;
-
-      if (startDate) {
-        start = new Date(startDate as string);
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'User not authenticated'
+          }
+        });
+        return;
       }
 
-      if (endDate) {
-        end = new Date(endDate as string);
+      const { stockSymbol, quantity, price } = req.body;
+
+      if (!stockSymbol || !quantity || !price) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Stock symbol, quantity, and price are required'
+          }
+        });
+        return;
       }
 
-      const csvData = await TradeHistoryModel.exportToCSV(userId, start, end);
+      if (quantity <= 0 || price <= 0) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Quantity and price must be positive numbers'
+          }
+        });
+        return;
+      }
 
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename=trade_history.csv');
-      res.send(csvData);
+      // Get current market price to validate
+      const currentPrice = await MarketDataService.getCurrentPrice(stockSymbol);
+      
+      // Allow some tolerance for price differences (5%)
+      const priceTolerance = 0.05;
+      if (Math.abs(price - currentPrice) / currentPrice > priceTolerance) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'PRICE_MISMATCH',
+            message: `Price ${price} is too different from current market price ${currentPrice}`,
+            data: { currentPrice }
+          }
+        });
+        return;
+      }
+
+      // Update position
+      const position = await PortfolioService.updatePosition(userId, stockSymbol, quantity, price);
+
+      res.json({
+        success: true,
+        data: {
+          position,
+          message: `Successfully bought ${quantity} shares of ${stockSymbol} at $${price}`
+        }
+      });
+
     } catch (error) {
-      console.error('Export trade history error:', error);
+      console.error('Error buying stock:', error);
       res.status(500).json({
         success: false,
         error: {
-          code: 'EXPORT_ERROR',
-          message: 'Failed to export trade history'
-        },
-        timestamp: new Date()
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to buy stock',
+          details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+        }
       });
     }
   }
 
-  static async getAnalyticsDashboard(req: AuthRequest, res: Response): Promise<void> {
+  static async sellStock(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user!.id;
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'User not authenticated'
+          }
+        });
+        return;
+      }
 
-      // Fetch multiple analytics in parallel
-      const [
-        performance,
-        benchmarkComparison,
-        topPerformers,
-        worstPerformers,
-        tradeStats,
-        constraintAnalysis
-      ] = await Promise.all([
-        PerformanceAnalyticsService.calculateDetailedPerformance(userId, '1M'),
-        PerformanceAnalyticsService.getPortfolioVsBenchmark(userId, '1M'),
-        PerformanceAnalyticsService.getTopPerformingPositions(userId, 3),
-        PerformanceAnalyticsService.getWorstPerformingPositions(userId, 3),
-        TradeHistoryModel.getTradeStatistics(userId),
-        PerformanceAnalyticsService.getConstraintPerformanceAnalysis(userId)
-      ]);
+      const { stockSymbol, quantity, price } = req.body;
 
-      const dashboard = {
-        performance,
-        benchmarkComparison,
-        topPerformers,
-        worstPerformers,
-        tradeStatistics: tradeStats,
-        constraintAnalysis: constraintAnalysis.slice(0, 5) // Top 5 constraints
+      if (!stockSymbol || !quantity || !price) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Stock symbol, quantity, and price are required'
+          }
+        });
+        return;
+      }
+
+      if (quantity <= 0 || price <= 0) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Quantity and price must be positive numbers'
+          }
+        });
+        return;
+      }
+
+      // Check if user has enough shares
+      const existingPosition = await PositionModel.findByUserIdAndSymbol(userId, stockSymbol);
+      if (!existingPosition || existingPosition.quantity < quantity) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INSUFFICIENT_SHARES',
+            message: `You only have ${existingPosition?.quantity || 0} shares of ${stockSymbol}`
+          }
+        });
+        return;
+      }
+
+      // Get current market price to validate
+      const currentPrice = await MarketDataService.getCurrentPrice(stockSymbol);
+      
+      // Allow some tolerance for price differences (5%)
+      const priceTolerance = 0.05;
+      if (Math.abs(price - currentPrice) / currentPrice > priceTolerance) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'PRICE_MISMATCH',
+            message: `Price ${price} is too different from current market price ${currentPrice}`,
+            data: { currentPrice }
+          }
+        });
+        return;
+      }
+
+      // Update position (negative quantity for selling)
+      const position = await PortfolioService.updatePosition(userId, stockSymbol, -quantity, price);
+
+      res.json({
+        success: true,
+        data: {
+          position,
+          message: `Successfully sold ${quantity} shares of ${stockSymbol} at $${price}`
+        }
+      });
+
+    } catch (error) {
+      console.error('Error selling stock:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to sell stock',
+          details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+        }
+      });
+    }
+  }
+
+  static async getCurrentPrice(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { symbol } = req.params;
+      
+      if (!symbol) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Stock symbol is required'
+          }
+        });
+        return;
+      }
+
+      const price = await MarketDataService.getCurrentPrice(symbol);
+      
+      res.json({
+        success: true,
+        data: {
+          symbol: symbol.toUpperCase(),
+          price,
+          timestamp: new Date()
+        }
+      });
+
+    } catch (error) {
+      console.error('Error getting current price:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to get current price',
+          details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+        }
+      });
+    }
+  }
+
+  static async getPosition(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { symbol } = req.params;
+      
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'User not authenticated'
+          }
+        });
+        return;
+      }
+
+      if (!symbol) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Stock symbol is required'
+          }
+        });
+        return;
+      }
+
+      const position = await PositionModel.findByUserIdAndSymbol(userId, symbol.toUpperCase());
+      
+      if (!position) {
+        res.json({
+          success: true,
+          data: null
+        });
+        return;
+      }
+
+      // Get current price for the position
+      const currentPrice = await MarketDataService.getCurrentPrice(symbol);
+      const unrealizedPnL = position.quantity * (currentPrice - position.averageCost);
+      const unrealizedPnLPercent = position.averageCost > 0 ? ((currentPrice - position.averageCost) / position.averageCost) * 100 : 0;
+
+      res.json({
+        success: true,
+        data: {
+          stockSymbol: position.stockSymbol,
+          quantity: position.quantity,
+          averageCost: position.averageCost,
+          currentPrice,
+          marketValue: position.quantity * currentPrice,
+          unrealizedPnL,
+          unrealizedPnLPercent,
+          lastUpdated: position.lastUpdated
+        }
+      });
+
+    } catch (error) {
+      console.error('Error getting position:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to get position',
+          details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+        }
+      });
+    }
+  }
+
+  private static calculateSectorAllocation(positions: any[]): { sector: string; value: number; percentage: number }[] {
+    // Simplified sector allocation - in reality, you'd need sector data for each stock
+    const sectors = ['Technology', 'Healthcare', 'Finance', 'Consumer', 'Industrial', 'Other'];
+    const totalValue = positions.reduce((sum, p) => sum + (p.quantity * (p.currentPrice || p.averageCost)), 0);
+    
+    // Mock sector distribution
+    return sectors.map((sector) => {
+      const value = totalValue * (0.1 + Math.random() * 0.3); // Random distribution for demo
+      return {
+        sector,
+        value,
+        percentage: totalValue > 0 ? (value / totalValue) * 100 : 0
       };
-
-      res.json({
-        success: true,
-        data: dashboard,
-        timestamp: new Date()
-      });
-    } catch (error) {
-      console.error('Get analytics dashboard error:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'DASHBOARD_ERROR',
-          message: 'Failed to fetch analytics dashboard'
-        },
-        timestamp: new Date()
-      });
-    }
+    }).filter(s => s.value > 0);
   }
 }

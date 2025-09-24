@@ -43,15 +43,15 @@ const ProfitLossChart: React.FC<ProfitLossChartProps> = ({ positions }) => {
     }).format(value);
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-gray-900">{data.name}</p>
-          <p className="text-sm text-gray-600">Positions: {data.value}</p>
+        <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg">
+          <p className="text-sm font-medium text-gray-900 dark:text-white">{data.name}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Positions: {data.value}</p>
           {data.amount !== 0 && (
-            <p className={`text-sm font-medium ${data.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-sm font-medium ${data.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               Total: {formatCurrency(data.amount)}
             </p>
           )}
@@ -61,7 +61,9 @@ const ProfitLossChart: React.FC<ProfitLossChartProps> = ({ positions }) => {
     return null;
   };
 
-  const CustomLegend = ({ payload }: any) => {
+  const CustomLegend = ({ payload }: { payload?: any[] }) => {
+    if (!payload) return null;
+    
     return (
       <div className="flex justify-center gap-4 mt-4">
         {payload.map((entry: any, index: number) => (
@@ -70,7 +72,7 @@ const ProfitLossChart: React.FC<ProfitLossChartProps> = ({ positions }) => {
               className="w-3 h-3 rounded-full" 
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 dark:text-gray-300">
               {entry.value} ({entry.payload.value})
             </span>
           </div>
@@ -82,7 +84,7 @@ const ProfitLossChart: React.FC<ProfitLossChartProps> = ({ positions }) => {
   if (data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center">
-        <p className="text-gray-500">No active positions to display</p>
+        <p className="text-gray-500 dark:text-gray-400">No active positions to display</p>
       </div>
     );
   }

@@ -4,12 +4,13 @@ import { ConstraintPosition } from '../../types';
 
 interface StockPerformanceTableProps {
   positions: ConstraintPosition[];
+  onQuickTrade?: (symbol: string, type: 'buy' | 'sell') => void;
 }
 
 type SortField = 'stockSymbol' | 'marketValue' | 'unrealizedPnl' | 'unrealizedPnlPercent' | 'quantity';
 type SortDirection = 'asc' | 'desc';
 
-const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions }) => {
+const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions, onQuickTrade }) => {
   const [sortField, setSortField] = useState<SortField>('unrealizedPnlPercent');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -58,6 +59,12 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals
     });
+  };
+
+  const handleQuickTrade = (symbol: string, type: 'buy' | 'sell') => {
+    if (onQuickTrade) {
+      onQuickTrade(symbol, type);
+    }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -132,6 +139,9 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Constraint
             </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -183,6 +193,26 @@ const StockPerformanceTable: React.FC<StockPerformanceTableProps> = ({ positions
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
                   {position.constraintType === 'group' ? 'Group' : 'Individual'}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleQuickTrade(position.stockSymbol, 'buy')}
+                    className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                    title="Quick Buy"
+                  >
+                    Buy
+                  </button>
+                  {position.quantity > 0 && (
+                    <button
+                      onClick={() => handleQuickTrade(position.stockSymbol, 'sell')}
+                      className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                      title="Quick Sell"
+                    >
+                      Sell
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>

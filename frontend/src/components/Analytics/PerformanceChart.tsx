@@ -1,12 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import api from '../../services/api';
 
 interface PerformanceChartProps {
   timeRange: '7d' | '30d' | '90d' | '1y';
 }
 
+interface HistoricalDataPoint {
+  timestamp: string;
+  totalValue: number;
+  totalGainLoss: number;
+  totalGainLossPercent: number;
+  positionCount: number;
+}
+
 const PerformanceChart: React.FC<PerformanceChartProps> = ({ timeRange }) => {
-  // Mock data - in a real app, this would come from an API
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadHistoricalData();
+  }, [timeRange]);
+
+  const loadHistoricalData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.get(`/analytics/portfolio-history?timeRange=${timeRange}`);
+      
+      if (response.data.success && response.data.data) {
+        const historicalData: HistoricalDataPoint[] = response.data.data;
+        
+        // Format data for the chart
+        const formattedData = historicalData.map(point => {
+          const date = new Date(point.timestamp);
+          return {
+            date: date.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric',
+              ...(timeRange === '1y' && { year: '2-digit' })
+            }),
+            value: Math.round(point.totalValue),
+            pnl: Math.round(point.totalGainLoss),
+            pnlPercent: point.totalGainLossPercent,
+            positions: point.positionCount,
+            timestamp: point.timestamp
+          };
+        });
+        
+        setData(formattedData);
+      } else {
+        throw new Error('Failed to load historical data');
+      }
+    } catch (error) {
+      console.error('Error loading historical data:', error);
+      setError('Failed to load performance data');
+      
+      // Fallback to mock data
+      setData(generateMockData());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fallback mock data generator
   const generateMockData = () => {
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
     const data = [];
@@ -25,14 +84,14 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ timeRange }) => {
           ...(timeRange === '1y' && { year: '2-digit' })
         }),
         value: Math.round(value),
-        pnl: Math.round(value - 10000)
+        pnl: Math.round(value - 10000),
+        pnlPercent: ((value - 10000) / 10000) * 100,
+        positions: Math.floor(Math.random() * 10) + 5
       });
     }
     
     return data;
   };
-
-  const data = generateMockData();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -43,23 +102,50 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ timeRange }) => {
     }).format(value);
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="text-sm text-gray-600">{label}</p>
-          <p className="text-sm font-medium text-gray-900">
+        <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300">{label}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">
             Value: {formatCurrency(data.value)}
           </p>
-          <p className={`text-sm font-medium ${data.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            P&L: {formatCurrency(data.pnl)}
+          <p className={`text-sm font-medium ${data.pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            P&L: {formatCurrency(data.pnl)} ({data.pnlPercent?.toFixed(2)}%)
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Positions: {data.positions}
           </p>
         </div>
       );
     }
     return null;
   };
+
+  if (loading) {
+    return (
+      <div className="h-64 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-64 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 dark:text-red-400 text-sm mb-2">{error}</p>
+          <button 
+            onClick={loadHistoricalData}
+            className="text-blue-600 dark:text-blue-400 text-sm hover:underline"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-64">

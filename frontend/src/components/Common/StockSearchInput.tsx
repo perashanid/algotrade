@@ -6,14 +6,25 @@ interface StockSearchInputProps {
   onStockSelect: (stock: string) => void;
   placeholder?: string;
   className?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
 }
 
 const StockSearchInput: React.FC<StockSearchInputProps> = ({ 
   onStockSelect, 
   placeholder = "Search stocks...", 
-  className = "" 
+  className = "",
+  value,
+  onValueChange
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(value || '');
+
+  // Sync with external value prop
+  useEffect(() => {
+    if (value !== undefined) {
+      setSearchTerm(value);
+    }
+  }, [value]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
@@ -31,7 +42,7 @@ const StockSearchInput: React.FC<StockSearchInputProps> = ({
 
   const handleStockSelect = (stock: string) => {
     onStockSelect(stock);
-    setSearchTerm('');
+    setSearchTerm(stock); // Show selected stock in input
     setShowDropdown(false);
   };
 
@@ -42,7 +53,13 @@ const StockSearchInput: React.FC<StockSearchInputProps> = ({
         <input
           type="text"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            setSearchTerm(newValue);
+            if (onValueChange) {
+              onValueChange(newValue);
+            }
+          }}
           onFocus={() => searchTerm && setShowDropdown(true)}
           onBlur={() => setTimeout(() => setShowDropdown(false), 300)}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
