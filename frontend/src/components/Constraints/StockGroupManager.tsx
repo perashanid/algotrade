@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, X, Check, Search } from 'lucide-react';
+import { Plus, Edit, X, Check, Search } from 'lucide-react';
+import DeleteButton from '../Common/DeleteButton';
 import { StockGroup, CreateStockGroupRequest } from '../../types';
 import { stockGroupsService } from '../../services/stockGroups';
 import { getStockInfo } from '../../data/stockDatabase';
@@ -253,13 +254,12 @@ const StockGroupManager: React.FC<StockGroupManagerProps> = ({ stockGroups, onUp
                 >
                   <Edit className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                 </button>
-                <button
-                  onClick={() => handleDelete(group)}
-                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                  title="Delete"
-                >
-                  <Trash2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                </button>
+                <DeleteButton
+                  onDelete={async () => handleDelete(group)}
+                  itemName={group.name}
+                  itemType="stock group"
+                  size="sm"
+                />
               </div>
             </div>
 

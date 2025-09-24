@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, TrendingDown, Target, DollarSign, Activity, Plus, Edit, Save, X, ChevronDown, ChevronRight, Search, Trash2, Tag, Power, PowerOff, UserPlus, UserMinus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, DollarSign, Activity, Plus, Edit, Save, X, ChevronDown, ChevronRight, Search, Tag, Power, PowerOff, UserPlus, UserMinus } from 'lucide-react';
+import DeleteButton from '../Common/DeleteButton';
 import { constraintPositionsService } from '../../services/constraintPositions';
 import { constraintGroupsService } from '../../services/constraintGroups';
 import { ConstraintPosition, ConstraintGroup, GroupDisplayData, StockTriggers, GroupUIState } from '../../types';
@@ -605,13 +606,12 @@ const ConstraintPositionList: React.FC = () => {
                     >
                       {groupData.group.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
                     </button>
-                    <button
-                      onClick={() => handleDeleteConstraintGroup(groupData.group.id, groupData.group.name)}
-                      className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                      title="Delete constraint group"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <DeleteButton
+                      onDelete={async () => handleDeleteConstraintGroup(groupData.group.id, groupData.group.name)}
+                      itemName={groupData.group.name}
+                      itemType="constraint group"
+                      size="md"
+                    />
                   </>
                 )}
               </div>
@@ -1189,13 +1189,12 @@ const ConstraintPositionList: React.FC = () => {
                             >
                               {constraint.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
                             </button>
-                            <button
-                              onClick={() => handleDeleteIndividualConstraint(constraint.id, constraint.stockSymbol)}
-                              className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                              title="Delete constraint"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <DeleteButton
+                              onDelete={async () => handleDeleteIndividualConstraint(constraint.id, constraint.stockSymbol)}
+                              itemName={constraint.stockSymbol}
+                              itemType="constraint"
+                              size="md"
+                            />
                           </>
                         )}
                       </div>
