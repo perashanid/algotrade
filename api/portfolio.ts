@@ -6,14 +6,11 @@ async function portfolioHandler(req: VercelRequest, res: VercelResponse) {
     res.status(200).json({
       success: true,
       message: 'Portfolio API working',
-      data: { 
-        note: 'This is a placeholder. Connect to your database for full functionality.',
-        portfolio: {
-          totalValue: 10000,
-          totalGainLoss: 500,
-          totalGainLossPercent: 5.0,
-          positions: []
-        }
+      data: {
+        totalValue: 10000,
+        totalGainLoss: 500,
+        totalGainLossPercent: 5.0,
+        positions: [] // Empty array - frontend expects this format
       }
     });
     return;
