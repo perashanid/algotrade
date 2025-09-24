@@ -1,12 +1,11 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response } from 'express';
 import { PortfolioService } from '../services/PortfolioService';
 import { PortfolioHistoryModel } from '../models/PortfolioHistory';
 import { MarketDataService } from '../services/MarketDataService';
 import { PositionModel } from '../models/Position';
 
 export class AnalyticsController {
-  static async getPortfolioHistory(req: AuthRequest, res: Response): Promise<void> {
+  static async getPortfolioHistory(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -75,7 +74,7 @@ export class AnalyticsController {
     }
   }
 
-  static async getRealTimeAnalytics(req: AuthRequest, res: Response): Promise<void> {
+  static async getRealTimeAnalytics(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -170,7 +169,7 @@ export class AnalyticsController {
     }
   }
 
-  static async buyStock(req: AuthRequest, res: Response): Promise<void> {
+  static async buyStock(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -249,7 +248,7 @@ export class AnalyticsController {
     }
   }
 
-  static async sellStock(req: AuthRequest, res: Response): Promise<void> {
+  static async sellStock(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -341,7 +340,7 @@ export class AnalyticsController {
     }
   }
 
-  static async getCurrentPrice(req: AuthRequest, res: Response): Promise<void> {
+  static async getCurrentPrice(req: Request, res: Response): Promise<void> {
     try {
       const { symbol } = req.params;
       
@@ -380,7 +379,7 @@ export class AnalyticsController {
     }
   }
 
-  static async getPosition(req: AuthRequest, res: Response): Promise<void> {
+  static async getPosition(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       const { symbol } = req.params;

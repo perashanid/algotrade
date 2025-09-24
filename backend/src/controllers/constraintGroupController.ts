@@ -1,10 +1,9 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ConstraintGroupModel } from '../models/ConstraintGroup';
 import { CreateConstraintGroupRequest, APIResponse, ConstraintGroup } from '../types';
-import { AuthRequest } from '../middleware/auth';
 
 export class ConstraintGroupController {
-  static async getConstraintGroups(req: AuthRequest, res: Response): Promise<void> {
+  static async getConstraintGroups(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const constraintGroups = await ConstraintGroupModel.findByUserId(userId);
@@ -27,7 +26,7 @@ export class ConstraintGroupController {
     }
   }
 
-  static async createConstraintGroup(req: AuthRequest, res: Response): Promise<void> {
+  static async createConstraintGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const constraintData: CreateConstraintGroupRequest = req.body;
@@ -102,7 +101,7 @@ export class ConstraintGroupController {
     }
   }
 
-  static async updateConstraintGroup(req: AuthRequest, res: Response): Promise<void> {
+  static async updateConstraintGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const constraintId = req.params.id;
@@ -178,7 +177,7 @@ export class ConstraintGroupController {
     }
   }
 
-  static async toggleConstraintGroup(req: AuthRequest, res: Response): Promise<void> {
+  static async toggleConstraintGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const constraintId = req.params.id;
@@ -216,7 +215,7 @@ export class ConstraintGroupController {
     }
   }
 
-  static async updateStockConstraint(req: AuthRequest, res: Response): Promise<void> {
+  static async updateStockConstraint(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { id: constraintId, stockSymbol } = req.params;
@@ -269,7 +268,7 @@ export class ConstraintGroupController {
     }
   }
 
-  static async removeStockConstraint(req: AuthRequest, res: Response): Promise<void> {
+  static async removeStockConstraint(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { id: constraintId, stockSymbol } = req.params;
@@ -296,7 +295,7 @@ export class ConstraintGroupController {
     }
   }
 
-  static async addStockToGroup(req: AuthRequest, res: Response): Promise<void> {
+  static async addStockToGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { id: constraintId } = req.params;
@@ -336,7 +335,7 @@ export class ConstraintGroupController {
     }
   }
 
-  static async removeStockFromGroup(req: AuthRequest, res: Response): Promise<void> {
+  static async removeStockFromGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { id: constraintId, stockSymbol } = req.params;
@@ -363,7 +362,7 @@ export class ConstraintGroupController {
     }
   }
 
-  static async deleteConstraintGroup(req: AuthRequest, res: Response): Promise<void> {
+  static async deleteConstraintGroup(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const constraintId = req.params.id;

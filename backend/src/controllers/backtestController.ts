@@ -1,10 +1,9 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response } from 'express';
 import { BacktestService } from '../services/BacktestService';
 
 export class BacktestController {
   static async runBacktest(
-    req: AuthRequest,
+    req: Request,
     res: Response
   ): Promise<void> {
     try {
@@ -112,7 +111,7 @@ export class BacktestController {
     }
   }
 
-  static async compareToMarket(req: AuthRequest, res: Response): Promise<void> {
+  static async compareToMarket(req: Request, res: Response): Promise<void> {
     try {
       const { backtestResult } = req.body;
       const { benchmarkSymbol } = req.query;
@@ -152,7 +151,7 @@ export class BacktestController {
     }
   }
 
-  static async runMultipleBacktests(req: AuthRequest, res: Response): Promise<void> {
+  static async runMultipleBacktests(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
       const { startDate, endDate } = req.body;
@@ -221,7 +220,7 @@ export class BacktestController {
     }
   }
 
-  static async getBacktestHistory(_req: AuthRequest, res: Response): Promise<void> {
+  static async getBacktestHistory(_req: Request, res: Response): Promise<void> {
     try {
       // This would typically fetch stored backtest results from database
       // For now, we'll return a placeholder response
@@ -246,7 +245,7 @@ export class BacktestController {
     }
   }
 
-  static async validateBacktestParameters(req: AuthRequest, res: Response): Promise<void> {
+  static async validateBacktestParameters(req: Request, res: Response): Promise<void> {
     try {
       const { constraintId, startDate, endDate } = req.body;
       const userId = req.user!.id;

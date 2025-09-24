@@ -1,9 +1,8 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { MarketDataService } from '../services/MarketDataService';
-import { AuthRequest } from '../middleware/auth';
 
 export class MarketController {
-  static async getQuote(req: AuthRequest, res: Response): Promise<void> {
+  static async getQuote(req: Request, res: Response): Promise<void> {
     try {
       const { symbol } = req.params;
       
@@ -66,7 +65,7 @@ export class MarketController {
     }
   }
 
-  static async getHistoricalData(req: AuthRequest, res: Response): Promise<void> {
+  static async getHistoricalData(req: Request, res: Response): Promise<void> {
     try {
       const { symbol } = req.params;
       const { startDate, endDate } = req.query;
@@ -155,7 +154,7 @@ export class MarketController {
     }
   }
 
-  static async getBenchmark(req: AuthRequest, res: Response): Promise<void> {
+  static async getBenchmark(req: Request, res: Response): Promise<void> {
     try {
       const { timeRange } = req.query;
       const benchmarkData = await MarketDataService.getBenchmarkData(timeRange as string);
@@ -178,7 +177,7 @@ export class MarketController {
     }
   }
 
-  static async validateSymbol(req: AuthRequest, res: Response): Promise<void> {
+  static async validateSymbol(req: Request, res: Response): Promise<void> {
     try {
       const { symbol } = req.params;
       
@@ -217,7 +216,7 @@ export class MarketController {
     }
   }
 
-  static async getMarketStatus(_req: AuthRequest, res: Response): Promise<void> {
+  static async getMarketStatus(_req: Request, res: Response): Promise<void> {
     try {
       const marketStatus = await MarketDataService.getMarketStatus();
 
@@ -239,7 +238,7 @@ export class MarketController {
     }
   }
 
-  static async getMultipleQuotes(req: AuthRequest, res: Response): Promise<void> {
+  static async getMultipleQuotes(req: Request, res: Response): Promise<void> {
     try {
       const { symbols } = req.body;
       
