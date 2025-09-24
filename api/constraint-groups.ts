@@ -6,20 +6,20 @@ import { executeQuery } from './lib/database';
 async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) {
   try {
     const user = requireAuth(req);
-    const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
-    const pathParts = pathname.split('/').filter(Boolean);
-
-    // Extract ID from path if present
-    const groupId = pathParts[2]; // /api/constraint-groups/{id}
 
     if (req.method === 'GET') {
-      if (groupId) {
-        // Get specific constraint group
-        const query = `
-          SELECT cg.id, cg.user_id, cg.name, cg.description, cg.is_active,
-                 cg.stocks, cg.stock_groups, cg.buy_trigger_percent, cg.sell_trigger_percent,
-                 cg.profit_trigger_percent, cg.buy_amount, cg.sell_amount,
-                 cg.sawait executeQuery(query, [user.id]);
+      // Get user's constraint groups from database
+      const query = `
+        SELECT cg.id, cg.user_id, cg.name, cg.description, cg.is_active,
+               cg.stocks, cg.stock_groups, cg.buy_trigger_percent, cg.sell_trigger_percent,
+               cg.profit_trigger_percent, cg.buy_amount, cg.sell_amount,
+               cg.stock_overrides, cg.created_at, cg.updated_at
+        FROM constraint_groups cg
+        WHERE cg.user_id = $1
+        ORDER BY cg.created_at DESC
+      `;
+      
+      const result = await executeQuery(query, [user.id]);
       
       const constraintGroups = result.rows.map((row: any) => ({
         id: row.id,
@@ -72,15 +72,15 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
       }
 
       const query = `
-        INSERT INTO constraint_groups(
+        INSERT INTO constraint_groups (
           user_id, name, description, is_active, stocks, stock_groups,
           buy_trigger_percent, sell_trigger_percent, profit_trigger_percent,
           buy_amount, sell_amount, stock_overrides
-        ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id, user_id, name, description, is_active, stocks, stock_groups,
-          buy_trigger_percent, sell_trigger_percent, profit_trigger_percent,
-          buy_amount, sell_amount, stock_overrides, created_at, updated_at
-            `;
+                  buy_trigger_percent, sell_trigger_percent, profit_trigger_percent,
+                  buy_amount, sell_amount, stock_overrides, created_at, updated_at
+      `;
 
       const result = await executeQuery(query, [
         user.id,
