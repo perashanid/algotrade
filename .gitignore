@@ -161,9 +161,9 @@ test-performance.*
 nginx.conf
 */nginx.conf
 
-# Deployment configuration files
-vercel.json
-netlify.toml
+# Deployment configuration files (keep these in git)
+# vercel.json - SHOULD be committed
+# netlify.toml - SHOULD be committed
 
 # Jest configuration
 jest.config.*
