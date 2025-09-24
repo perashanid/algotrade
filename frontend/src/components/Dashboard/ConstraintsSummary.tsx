@@ -1,28 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import { Users, TrendingUp, TrendingDown, Target, Plus, Activity } from 'lucide-react';
 import { constraintPositionsService } from '../../services/constraintPositions';
 import { ProcessedGroupData } from '../../services/constraintPositions';
 
 const ConstraintsSummary: React.FC = () => {
-  const [processedGroups, setProcessedGroups] = useState<ProcessedGroupData[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadConstraints();
-  }, []);
-
-  const loadConstraints = async () => {
-    try {
-      setLoading(true);
-      const groupsData = await constraintPositionsService.getProcessedGroupData();
-      setProcessedGroups(groupsData);
-    } catch (error) {
-      console.error('Failed to load constraint groups:', error);
-    } finally {
-      setLoading(false);
+  const {
+    data: processedGroups = [],
+    isLoading: loading,
+    error
+  } = useQuery(
+    'constraint-positions',
+    constraintPositionsService.getProcessedGroupData,
+    {
+      refetchInterval: 30000, // Refetch every 30 seconds
+      staleTime: 10000, // Consider data stale after 10 seconds
     }
-  };
+  );
+
+  if (error) {
+    console.error('Failed to load constraint groups:', error);
+  }
 
   const activeGroups = processedGroups.filter(g => g.group.isActive);
   const totalActive = activeGroups.length;

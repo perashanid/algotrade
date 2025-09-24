@@ -3,10 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, TrendingDown, TrendingUp, Target, DollarSign, Percent, AlertCircle } from 'lucide-react';
 import { constraintsService } from '../../services/constraints';
 import { CreateConstraintRequest } from '../../types';
+import { useInvalidateQueries } from '../../hooks/useInvalidateQueries';
 import toast from 'react-hot-toast';
 
 const CreateConstraint: React.FC = () => {
   const navigate = useNavigate();
+  const { invalidateConstraintData } = useInvalidateQueries();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CreateConstraintRequest>({
     stockSymbol: '',
@@ -85,6 +87,10 @@ const CreateConstraint: React.FC = () => {
       };
       
       await constraintsService.createConstraint(constraintData);
+      
+      // Invalidate React Query cache to refresh all constraint-related data
+      await invalidateConstraintData();
+      
       toast.success('Constraint created successfully!');
       navigate('/constraints');
     } catch (error) {
