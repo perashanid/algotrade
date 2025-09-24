@@ -1,3 +1,4 @@
+import React from 'react';
 import { constraintsService } from '../../../services/constraints';
 import { constraintGroupsService } from '../../../services/constraintGroups';
 import { TradingConstraint, ConstraintGroup } from '../../../types';
