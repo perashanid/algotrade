@@ -60,6 +60,67 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
         return;
       }
 
+      // Handle updating individual stock constraints: PUT /api/constraint-groups/{id}/stocks/{symbol}
+      if (pathParts.length === 5 && pathParts[3] === 'stocks') {
+        const stockSymbol = pathParts[4];
+        const constraints = req.body;
+        
+        // Get current group
+        const getQuery = `SELECT stock_overrides FROM constraint_groups WHERE id = $1 AND user_id = $2`;
+        const getResult = await executeQuery(getQuery, [groupId, user.id]);
+        
+        if (getResult.rows.length === 0) {
+          res.status(404).json({
+            success: false,
+            error: 'Constraint group not found'
+          });
+          return;
+        }
+
+        const currentOverrides = JSON.parse(getResult.rows[0].stock_overrides || '{}');
+        
+        // Update overrides for this stock
+        currentOverrides[stockSymbol.toUpperCase()] = {
+          ...currentOverrides[stockSymbol.toUpperCase()],
+          ...constraints
+        };
+        
+        // Update the group
+        const updateQuery = `
+          UPDATE constraint_groups 
+          SET stock_overrides = $1, updated_at = NOW()
+          WHERE id = $2 AND user_id = $3
+          RETURNING id, user_id, name, description, is_active, stocks, stock_groups,
+                    buy_trigger_percent, sell_trigger_percent, profit_trigger_percent,
+                    buy_amount, sell_amount, stock_overrides, created_at, updated_at
+        `;
+        
+        const updateResult = await executeQuery(updateQuery, [JSON.stringify(currentOverrides), groupId, user.id]);
+        const group = updateResult.rows[0];
+        
+        res.status(200).json({
+          success: true,
+          data: {
+            id: group.id,
+            userId: group.user_id,
+            name: group.name,
+            description: group.description,
+            isActive: group.is_active,
+            stocks: JSON.parse(group.stocks || '[]'),
+            stockGroups: JSON.parse(group.stock_groups || '[]'),
+            buyTriggerPercent: parseFloat(group.buy_trigger_percent),
+            sellTriggerPercent: parseFloat(group.sell_trigger_percent),
+            profitTriggerPercent: group.profit_trigger_percent ? parseFloat(group.profit_trigger_percent) : null,
+            buyAmount: parseFloat(group.buy_amount),
+            sellAmount: parseFloat(group.sell_amount),
+            stockOverrides: JSON.parse(group.stock_overrides || '{}'),
+            createdAt: group.created_at,
+            updatedAt: group.updated_at
+          }
+        });
+        return;
+      }
+
       // Check if it's a toggle operation
       if (pathParts[3] === 'toggle') {
         const { isActive } = req.body;
@@ -201,7 +262,6 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
     }
 
     if (req.method === 'DELETE') {
-      // Delete constraint group
       const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
       const pathParts = pathname.split('/').filter(Boolean);
       const groupId = pathParts[2]; // /api/constraint-groups/{id}
@@ -214,6 +274,74 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
         return;
       }
 
+      // Handle removing stock from group: DELETE /api/constraint-groups/{id}/stocks/{symbol}/remove
+      if (pathParts.length === 6 && pathParts[3] === 'stocks' && pathParts[5] === 'remove') {
+        const stockSymbol = pathParts[4];
+        
+        // Get current group
+        const getQuery = `SELECT stocks, stock_overrides FROM constraint_groups WHERE id = $1 AND user_id = $2`;
+        const getResult = await executeQuery(getQuery, [groupId, user.id]);
+        
+        if (getResult.rows.length === 0) {
+          res.status(404).json({
+            success: false,
+            error: 'Constraint group not found'
+          });
+          return;
+        }
+
+        const currentStocks = JSON.parse(getResult.rows[0].stocks || '[]');
+        const currentOverrides = JSON.parse(getResult.rows[0].stock_overrides || '{}');
+        
+        // Remove stock from the array
+        const updatedStocks = currentStocks.filter((stock: string) => stock !== stockSymbol.toUpperCase());
+        
+        // Remove any overrides for this stock
+        const updatedOverrides = { ...currentOverrides };
+        delete updatedOverrides[stockSymbol.toUpperCase()];
+        
+        // Update the group
+        const updateQuery = `
+          UPDATE constraint_groups 
+          SET stocks = $1, stock_overrides = $2, updated_at = NOW()
+          WHERE id = $3 AND user_id = $4
+          RETURNING id, user_id, name, description, is_active, stocks, stock_groups,
+                    buy_trigger_percent, sell_trigger_percent, profit_trigger_percent,
+                    buy_amount, sell_amount, stock_overrides, created_at, updated_at
+        `;
+        
+        const updateResult = await executeQuery(updateQuery, [
+          JSON.stringify(updatedStocks), 
+          JSON.stringify(updatedOverrides), 
+          groupId, 
+          user.id
+        ]);
+        const group = updateResult.rows[0];
+        
+        res.status(200).json({
+          success: true,
+          data: {
+            id: group.id,
+            userId: group.user_id,
+            name: group.name,
+            description: group.description,
+            isActive: group.is_active,
+            stocks: JSON.parse(group.stocks || '[]'),
+            stockGroups: JSON.parse(group.stock_groups || '[]'),
+            buyTriggerPercent: parseFloat(group.buy_trigger_percent),
+            sellTriggerPercent: parseFloat(group.sell_trigger_percent),
+            profitTriggerPercent: group.profit_trigger_percent ? parseFloat(group.profit_trigger_percent) : null,
+            buyAmount: parseFloat(group.buy_amount),
+            sellAmount: parseFloat(group.sell_amount),
+            stockOverrides: JSON.parse(group.stock_overrides || '{}'),
+            createdAt: group.created_at,
+            updatedAt: group.updated_at
+          }
+        });
+        return;
+      }
+
+      // Delete constraint group
       const query = `DELETE FROM constraint_groups WHERE id = $1 AND user_id = $2`;
       const result = await executeQuery(query, [groupId, user.id]);
       
@@ -233,6 +361,84 @@ async function constraintGroupsHandler(req: VercelRequest, res: VercelResponse) 
     }
 
     if (req.method === 'POST') {
+      const { pathname } = new URL(req.url!, `http://${req.headers.host}`);
+      const pathParts = pathname.split('/').filter(Boolean);
+      
+      // Handle adding stock to group: POST /api/constraint-groups/{id}/stocks
+      if (pathParts.length === 4 && pathParts[3] === 'stocks') {
+        const groupId = pathParts[2];
+        const { stockSymbol } = req.body;
+        
+        if (!groupId || !stockSymbol) {
+          res.status(400).json({
+            success: false,
+            error: 'Group ID and stock symbol are required'
+          });
+          return;
+        }
+
+        // Get current group
+        const getQuery = `SELECT stocks FROM constraint_groups WHERE id = $1 AND user_id = $2`;
+        const getResult = await executeQuery(getQuery, [groupId, user.id]);
+        
+        if (getResult.rows.length === 0) {
+          res.status(404).json({
+            success: false,
+            error: 'Constraint group not found'
+          });
+          return;
+        }
+
+        const currentStocks = JSON.parse(getResult.rows[0].stocks || '[]');
+        
+        // Check if stock already exists
+        if (currentStocks.includes(stockSymbol.toUpperCase())) {
+          res.status(400).json({
+            success: false,
+            error: 'Stock already exists in this group'
+          });
+          return;
+        }
+
+        // Add stock to the array
+        const updatedStocks = [...currentStocks, stockSymbol.toUpperCase()];
+        
+        // Update the group
+        const updateQuery = `
+          UPDATE constraint_groups 
+          SET stocks = $1, updated_at = NOW()
+          WHERE id = $2 AND user_id = $3
+          RETURNING id, user_id, name, description, is_active, stocks, stock_groups,
+                    buy_trigger_percent, sell_trigger_percent, profit_trigger_percent,
+                    buy_amount, sell_amount, stock_overrides, created_at, updated_at
+        `;
+        
+        const updateResult = await executeQuery(updateQuery, [JSON.stringify(updatedStocks), groupId, user.id]);
+        const group = updateResult.rows[0];
+        
+        res.status(200).json({
+          success: true,
+          data: {
+            id: group.id,
+            userId: group.user_id,
+            name: group.name,
+            description: group.description,
+            isActive: group.is_active,
+            stocks: JSON.parse(group.stocks || '[]'),
+            stockGroups: JSON.parse(group.stock_groups || '[]'),
+            buyTriggerPercent: parseFloat(group.buy_trigger_percent),
+            sellTriggerPercent: parseFloat(group.sell_trigger_percent),
+            profitTriggerPercent: group.profit_trigger_percent ? parseFloat(group.profit_trigger_percent) : null,
+            buyAmount: parseFloat(group.buy_amount),
+            sellAmount: parseFloat(group.sell_amount),
+            stockOverrides: JSON.parse(group.stock_overrides || '{}'),
+            createdAt: group.created_at,
+            updatedAt: group.updated_at
+          }
+        });
+        return;
+      }
+
       // Create new constraint group
       const {
         name,
