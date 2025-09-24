@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Target, DollarSign, Activity, Plus, Edit, Save, X, ChevronDown, ChevronRight, Search, Tag, Power, PowerOff, UserPlus, UserMinus } from 'lucide-react';
 import DeleteButton from '../Common/DeleteButton';
+import EditTriggersModal from '../Common/EditTriggersModal';
 import { constraintPositionsService } from '../../services/constraintPositions';
 import { constraintGroupsService } from '../../services/constraintGroups';
 import { ConstraintPosition, ConstraintGroup, GroupDisplayData, StockTriggers, GroupUIState } from '../../types';
@@ -30,6 +31,12 @@ const ConstraintPositionList: React.FC = () => {
     }
   });
 
+  // Add state for stock editing similar to the working constraints page
+  const [editingStockData, setEditingStockData] = useState<{
+    stock: any;
+    groupId: string;
+  } | null>(null);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -42,6 +49,13 @@ const ConstraintPositionList: React.FC = () => {
         constraintPositionsService.getGroupDisplayData(),
         constraintsService.getConstraints()
       ]);
+      
+      // Debug: Log the loaded data
+      console.log('Loaded group data:', groupsData);
+      console.log('Groups with stocks:', groupsData.map(g => ({ 
+        groupName: g.group.name, 
+        stocks: g.stocks.map(s => ({ symbol: s.symbol, hasPosition: !!s.position }))
+      })));
       
       // Ensure data is always arrays
       setGroupDisplayData(Array.isArray(groupsData) ? groupsData : []);
@@ -90,15 +104,21 @@ const ConstraintPositionList: React.FC = () => {
     }));
   };
 
-  const handleEditStock = (groupId: string, stockSymbol: string, group: ConstraintGroup) => {
-    // Get effective triggers for this stock
-    const effectiveTriggers = constraintPositionsService.getEffectiveTriggers(group, stockSymbol);
+  const handleEditStock = (groupId: string, stockData: any, group: ConstraintGroup) => {
+    console.log('handleEditStock called with:', { groupId, stockSymbol: stockData.symbol, groupName: group.name });
     
-    setUIState(prev => ({
-      ...prev,
-      editingStock: `${groupId}-${stockSymbol}`,
-      editValues: effectiveTriggers
-    }));
+    // Validate that stockSymbol is actually a stock symbol (not a numeric ID)
+    if (!stockData.symbol || /^\d+$/.test(stockData.symbol)) {
+      console.error('Invalid stock symbol passed to handleEditStock:', stockData.symbol);
+      toast.error('Invalid stock symbol. Please refresh the page and try again.');
+      return;
+    }
+    
+    // Use the new approach similar to the working constraints page
+    setEditingStockData({
+      stock: stockData,
+      groupId: groupId
+    });
   };
 
   const [editingIndividual, setEditingIndividual] = useState<string | null>(null);
@@ -117,27 +137,38 @@ const ConstraintPositionList: React.FC = () => {
     }));
   };
 
+  // Handle stock editing using the same approach as the working constraints page
+  const handleEditStockData = async (values: any) => {
+    if (!editingStockData) return;
+    
+    try {
+      console.log('Updating stock constraint:', { 
+        groupId: editingStockData.groupId, 
+        stockSymbol: editingStockData.stock.symbol, 
+        values 
+      });
+
+      await constraintGroupsService.updateStockConstraint(
+        editingStockData.groupId, 
+        editingStockData.stock.symbol, 
+        values
+      );
+      
+      toast.success(`Updated triggers for ${editingStockData.stock.symbol}`);
+      setEditingStockData(null);
+      await loadData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update stock triggers');
+      throw error;
+    }
+  };
+
   const handleSaveEdit = async () => {
     try {
       if (uiState.editingGroup) {
         await constraintGroupsService.updateConstraintGroup(uiState.editingGroup, uiState.editValues);
         toast.success('Constraint group updated successfully!');
         setUIState(prev => ({ ...prev, editingGroup: null }));
-        await loadData();
-      } else if (uiState.editingStock) {
-        // For individual stock editing, update the stock's individual constraints within the group
-        const [groupId, stockSymbol] = uiState.editingStock.split('-');
-
-        await constraintGroupsService.updateStockConstraint(groupId, stockSymbol, {
-          buyTriggerPercent: uiState.editValues.buyTriggerPercent,
-          sellTriggerPercent: uiState.editValues.sellTriggerPercent,
-          profitTriggerPercent: uiState.editValues.profitTriggerPercent,
-          buyAmount: uiState.editValues.buyAmount,
-          sellAmount: uiState.editValues.sellAmount
-        });
-
-        toast.success(`${stockSymbol} constraints updated successfully!`);
-        setUIState(prev => ({ ...prev, editingStock: null }));
         await loadData();
       } else if (editingIndividual) {
         // For individual constraint editing
@@ -165,6 +196,7 @@ const ConstraintPositionList: React.FC = () => {
       }
     }));
     setEditingIndividual(null);
+    setEditingStockData(null);
   };
 
   // Helper function to update edit values
@@ -697,6 +729,9 @@ const ConstraintPositionList: React.FC = () => {
                     </div>
                   ) : (
                     getMatchingStocks(groupData).map((stockData) => {
+                      // Debug: Log the stock data to see what's being rendered
+                      console.log('Rendering stock:', stockData.symbol, 'for group:', groupData.group.name);
+                      
                       const stockInfo = getStockInfo(stockData.symbol);
                       const isEditing = uiState.editingStock === `${groupData.group.id}-${stockData.symbol}`;
                       
@@ -917,7 +952,7 @@ const ConstraintPositionList: React.FC = () => {
                               ) : (
                                 <>
                                   <button
-                                    onClick={() => handleEditStock(groupData.group.id, stockData.symbol, groupData.group)}
+                                    onClick={() => handleEditStock(groupData.group.id, stockData, groupData.group)}
                                     className="p-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                                     title="Edit individual constraints"
                                   >
@@ -1204,6 +1239,25 @@ const ConstraintPositionList: React.FC = () => {
               })}
           </div>
         </div>
+      )}
+
+      {/* Edit Stock Triggers Modal */}
+      {editingStockData && (
+        <EditTriggersModal
+          isOpen={true}
+          onClose={() => setEditingStockData(null)}
+          onSave={handleEditStockData}
+          initialValues={{
+            buyTriggerPercent: editingStockData.stock.triggers.buyTriggerPercent,
+            sellTriggerPercent: editingStockData.stock.triggers.sellTriggerPercent,
+            profitTriggerPercent: editingStockData.stock.triggers.profitTriggerPercent || undefined,
+            buyAmount: editingStockData.stock.triggers.buyAmount,
+            sellAmount: editingStockData.stock.triggers.sellAmount
+          }}
+          title={`Edit ${editingStockData.stock.symbol} Triggers`}
+          itemName={editingStockData.stock.symbol}
+          itemType="stock"
+        />
       )}
     </div>
   );
