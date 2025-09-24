@@ -33,11 +33,19 @@ export const constraintsService = {
   },
 
   async deleteConstraint(id: string): Promise<void> {
-    const response = await api.delete<APIResponse<null>>(`/constraints/${id}`);
+    console.log('constraintsService.deleteConstraint called with id:', id);
+    const url = `/constraints/${id}`;
+    console.log('Making DELETE request to:', url);
+    
+    const response = await api.delete<APIResponse<null>>(url);
+    console.log('Delete response:', response.data);
     
     if (!response.data.success) {
+      console.error('Delete failed with error:', response.data.error);
       throw new Error(response.data.error?.message || 'Failed to delete constraint');
     }
+    
+    console.log('Delete successful');
   },
 
   async toggleConstraint(id: string, isActive: boolean): Promise<TradingConstraint> {

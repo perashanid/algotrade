@@ -85,18 +85,36 @@ const Constraints: React.FC = () => {
   };
 
   const handleDelete = async (id: string, stockSymbol: string) => {
+    console.log('handleDelete called with:', { id, stockSymbol });
+    
     if (!window.confirm(`Are you sure you want to delete the constraint for ${stockSymbol}?`)) {
+      console.log('Delete cancelled by user');
       return;
     }
 
     try {
-      console.log('Deleting constraint:', { id, stockSymbol });
+      console.log('Starting delete operation for constraint:', { id, stockSymbol });
+      console.log('Current constraints before delete:', constraints.length);
+      
       await constraintsService.deleteConstraint(id);
-      setConstraints(prev => prev.filter(c => c.id !== id));
+      console.log('Delete API call successful');
+      
+      setConstraints(prev => {
+        const filtered = prev.filter(c => c.id !== id);
+        console.log('Constraints after filter:', filtered.length);
+        return filtered;
+      });
+      
       await invalidateConstraintData(); // Invalidate React Query cache
+      console.log('Cache invalidated');
+      
       toast.success('Constraint deleted successfully');
     } catch (error) {
       console.error('Delete constraint error:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       toast.error(error instanceof Error ? error.message : 'Failed to delete constraint');
     }
   };
@@ -127,18 +145,36 @@ const Constraints: React.FC = () => {
   };
 
   const handleDeleteConstraintGroup = async (id: string, name: string) => {
+    console.log('handleDeleteConstraintGroup called with:', { id, name });
+    
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) {
+      console.log('Delete cancelled by user');
       return;
     }
 
     try {
-      console.log('Deleting constraint group:', { id, name });
+      console.log('Starting delete operation for constraint group:', { id, name });
+      console.log('Current constraint groups before delete:', constraintGroups.length);
+      
       await constraintGroupsService.deleteConstraintGroup(id);
-      setConstraintGroups(prev => prev.filter(c => c.id !== id));
+      console.log('Delete API call successful');
+      
+      setConstraintGroups(prev => {
+        const filtered = prev.filter(c => c.id !== id);
+        console.log('Constraint groups after filter:', filtered.length);
+        return filtered;
+      });
+      
       await invalidateConstraintData(); // Invalidate React Query cache
+      console.log('Cache invalidated');
+      
       toast.success('Constraint group deleted successfully');
     } catch (error) {
       console.error('Delete constraint group error:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       toast.error(error instanceof Error ? error.message : 'Failed to delete constraint group');
     }
   };
@@ -647,7 +683,12 @@ const Constraints: React.FC = () => {
                               )}
                             </button>
                             <button
-                              onClick={() => handleDelete(constraint.id, constraint.stockSymbol)}
+                              onClick={(e) => {
+                                console.log('Delete button clicked for constraint:', constraint.id, constraint.stockSymbol);
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDelete(constraint.id, constraint.stockSymbol);
+                              }}
                               className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                               title="Delete"
                             >
@@ -950,7 +991,12 @@ const Constraints: React.FC = () => {
                   )}
 
                   <button
-                    onClick={() => handleDeleteConstraintGroup(constraintGroup.id, constraintGroup.name)}
+                    onClick={(e) => {
+                      console.log('Delete button clicked for constraint group:', constraintGroup.id, constraintGroup.name);
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteConstraintGroup(constraintGroup.id, constraintGroup.name);
+                    }}
                     className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                     title="Delete"
                   >
