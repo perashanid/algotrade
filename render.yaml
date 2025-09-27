@@ -1,0 +1,47 @@
+services:
+  # Backend API Service
+  - type: web
+    name: algotrade-backend
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: algotrade-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: FINNHUB_API_KEY
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+
+  # Frontend Static Site
+  - type: static
+    name: algotrade-frontend
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: algotrade-backend
+          envVarKey: RENDER_EXTERNAL_URL
+
+databases:
+  - name: algotrade-db
+    databaseName: algotrade
+    user: algotrade_user
+    region: oregon
+    plan: starter
