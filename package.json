@@ -8,13 +8,22 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "build": "npm run build:backend && npm run build:frontend",
-    "build:backend": "cd backend && npm install && npm run build",
-    "build:frontend": "cd frontend && npm install && npm run build",
-    "start": "cd backend && npm start"
+    "build:backend": "cd backend && npm ci && npm run build",
+    "build:frontend": "cd frontend && npm ci && npm run build",
+    "start": "cd backend && npm start",
+    "postinstall": "cd backend && npm install && cd ../frontend && npm install"
   },
-  "keywords": ["trading", "algorithmic", "portfolio", "stocks"],
+  "keywords": [
+    "trading",
+    "algorithmic",
+    "portfolio",
+    "stocks"
+  ],
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "typescript": "^5.9.2"
   }
 }
