@@ -1,0 +1,54 @@
+import api from './api';
+import { APIResponse, TradingConstraint, CreateConstraintRequest, UpdateConstraintRequest } from '../types';
+
+export const constraintsService = {
+  async getConstraints(): Promise<TradingConstraint[]> {
+    const response = await api.get<APIResponse<TradingConstraint[]>>('/constraints');
+    
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    
+    throw new Error(response.data.error?.message || 'Failed to fetch constraints');
+  },
+
+  async createConstraint(constraint: CreateConstraintRequest): Promise<TradingConstraint> {
+    const response = await api.post<APIResponse<TradingConstraint>>('/constraints', constraint);
+    
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    
+    throw new Error(response.data.error?.message || 'Failed to create constraint');
+  },
+
+  async updateConstraint(id: string, updates: UpdateConstraintRequest): Promise<TradingConstraint> {
+    const response = await api.put<APIResponse<TradingConstraint>>(`/constraints/${id}`, updates);
+    
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    
+    throw new Error(response.data.error?.message || 'Failed to update constraint');
+  },
+
+  async deleteConstraint(id: string): Promise<void> {
+    console.log('constraintsService.deleteConstraint called with id:', id);
+    const url = `/constraints/${id}`;
+    console.log('Making DELETE request to:', url);
+    
+    const response = await api.delete<APIResponse<null>>(url);
+    console.log('Delete response:', response.data);
+    
+    if (!response.data.success) {
+      console.error('Delete failed with error:', response.data.error);
+      throw new Error(response.data.error?.message || 'Failed to delete constraint');
+    }
+    
+    console.log('Delete successful');
+  },
+
+  async toggleConstraint(id: string, isActive: boolean): Promise<TradingConstraint> {
+    return this.updateConstraint(id, { isActive });
+  }
+};
