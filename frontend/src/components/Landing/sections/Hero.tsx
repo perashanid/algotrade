@@ -68,7 +68,7 @@ const Hero: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.4 }}
             className="mb-6"
           >
             <span className="inline-block px-4 py-2 bg-brand-200 dark:bg-brand-800/30 text-gray-800 dark:text-brand-200 rounded-full text-sm font-semibold">
@@ -79,7 +79,12 @@ const Hero: React.FC = () => {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ 
+              duration: 0.5, 
+              delay: 0.1,
+              type: "spring",
+              stiffness: 100
+            }}
             className="text-5xl md:text-7xl font-bold mb-6 text-gray-900 dark:text-white"
           >
             Trade Smarter with AI
@@ -95,7 +100,7 @@ const Hero: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <motion.button
@@ -128,7 +133,7 @@ const Hero: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
               className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
             >
               {[

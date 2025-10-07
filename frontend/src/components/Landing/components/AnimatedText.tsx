@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 
 interface AnimatedTextProps {
   text: string;
@@ -8,36 +8,52 @@ interface AnimatedTextProps {
 }
 
 const AnimatedText: React.FC<AnimatedTextProps> = ({ text, className = '', delay = 0 }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const words = text.split(' ');
 
-  useEffect(() => {
-    if (currentIndex < text.length) {
-      const timeout = setTimeout(() => {
-        setDisplayedText(prev => prev + text[currentIndex]);
-        setCurrentIndex(prev => prev + 1);
-      }, 30 + delay);
+  const container = {
+    hidden: { opacity: 0 },
+    visible: (i = 1) => ({
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.03,
+        delayChildren: delay 
+      },
+    }),
+  };
 
-      return () => clearTimeout(timeout);
-    }
-  }, [currentIndex, text, delay]);
-
-  const words = displayedText.split(' ');
+  const child = {
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        damping: 12,
+        stiffness: 100,
+      },
+    },
+    hidden: {
+      opacity: 0,
+      y: 10,
+    },
+  };
 
   return (
-    <div className={className}>
-      {words.map((word, wordIndex) => (
+    <motion.div
+      className={className}
+      variants={container}
+      initial="hidden"
+      animate="visible"
+    >
+      {words.map((word, index) => (
         <motion.span
-          key={wordIndex}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: wordIndex * 0.05 }}
+          key={index}
+          variants={child}
           className="inline-block mr-2"
         >
           {word}
         </motion.span>
       ))}
-    </div>
+    </motion.div>
   );
 };
 
