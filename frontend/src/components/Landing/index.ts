@@ -1,0 +1,9 @@
+export { default as LandingPage } from './LandingPage';
+export { default as Navbar } from './sections/Navbar';
+export { default as Hero } from './sections/Hero';
+export { default as Features } from './sections/Features';
+export { default as HowItWorks } from './sections/HowItWorks';
+export { default as Testimonials } from './sections/Testimonials';
+export { default as Pricing } from './sections/Pricing';
+export { default as CTA } from './sections/CTA';
+export { default as Footer } from './sections/Footer';

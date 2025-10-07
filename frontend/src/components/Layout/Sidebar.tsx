@@ -13,33 +13,33 @@ const Sidebar: React.FC = () => {
   const navigation = [
     {
       name: 'Dashboard',
-      href: '/dashboard',
+      href: '/app/dashboard',
       icon: LayoutDashboard,
     },
     {
       name: 'Constraints',
-      href: '/constraints',
+      href: '/app/constraints',
       icon: Settings,
     },
     {
       name: 'Analytics',
-      href: '/analytics',
+      href: '/app/analytics',
       icon: BarChart3,
     },
     {
       name: 'Trade History',
-      href: '/trades',
+      href: '/app/trades',
       icon: History,
     },
     {
       name: 'Backtest',
-      href: '/backtest',
+      href: '/app/backtest',
       icon: TestTube,
     },
   ];
 
   return (
-    <div className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-sm border-r border-gray-200 dark:border-gray-700 pt-16 transition-colors duration-200">
+    <div className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-brand-900 shadow-sm border-r border-brand-100 dark:border-brand-800 pt-16 transition-colors duration-200">
       <div className="flex flex-col h-full">
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2">
@@ -50,10 +50,10 @@ const Sidebar: React.FC = () => {
                 key={item.name}
                 to={item.href}
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${
                     isActive
-                      ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-r-2 border-blue-700 dark:border-blue-400'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                      ? 'bg-gradient-to-r from-brand-100 to-brand-200 dark:from-brand-800 dark:to-brand-700 text-brand-700 dark:text-white border-r-2 border-brand-700 dark:border-brand-400 shadow-md'
+                      : 'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-brand-50 dark:hover:bg-brand-800'
                   }`
                 }
               >
@@ -65,8 +65,8 @@ const Sidebar: React.FC = () => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="p-4 border-t border-gray-200 dark:border-brand-800">
+          <div className="flex items-center text-sm text-gray-500 dark:text-gray-300">
             <TrendingUp className="h-4 w-4 mr-2" />
             <span>Algorithmic Trading Platform</span>
           </div>

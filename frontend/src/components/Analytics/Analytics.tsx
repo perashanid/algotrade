@@ -214,12 +214,13 @@ const Analytics: React.FC = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analytics</h1>
-          <div className="flex items-center gap-4 mt-2">
-            <p className="text-gray-600 dark:text-gray-300">Performance insights and trading analytics</p>
+    <div className="min-h-screen bg-gradient-to-br from-brand-lightest via-brand-light to-brand-medium dark:from-brand-950 dark:via-brand-900 dark:to-brand-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Analytics</h1>
+            <div className="flex items-center gap-4 mt-2">
+              <p className="text-gray-600 dark:text-gray-300 text-lg">Performance insights and trading analytics</p>
             <div className="flex items-center gap-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Last updated: {lastUpdated.toLocaleTimeString()}
@@ -239,19 +240,19 @@ const Analytics: React.FC = () => {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-700 to-brand-600 hover:from-brand-darker hover:to-brand-dark disabled:opacity-50 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
           >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Updating...' : 'Refresh Prices'}
           </button>
           
           {/* Time Range Selector */}
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <Calendar className="h-5 w-5 text-brand-700 dark:text-brand-300" />
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+              className="px-4 py-3 border-2 border-brand-300 dark:border-brand-800 bg-white dark:bg-brand-900 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-darkest dark:focus:ring-brand-light focus:border-transparent shadow-md transition-all"
             >
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
@@ -262,115 +263,115 @@ const Analytics: React.FC = () => {
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Total Portfolio Value</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalValue)}</p>
-            </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <DollarSign className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-lg border-2 border-brand-200 dark:border-brand-800 hover:shadow-xl transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">Total Portfolio Value</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalValue)}</p>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-brand-light to-brand-medium dark:from-brand-800 dark:to-brand-700 rounded-xl">
+                <DollarSign className="h-6 w-6 text-brand-700 dark:text-brand-300" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-600 dark:text-gray-300">Total P&L</p>
-                {hasStaleData && (
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Some prices are stale"></div>
+          <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-lg border-2 border-brand-200 dark:border-brand-800 hover:shadow-xl transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">Total P&L</p>
+                  {hasStaleData && (
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Some prices are stale"></div>
+                  )}
+                </div>
+                <p className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {formatCurrency(totalPnL)}
+                </p>
+                <p className={`text-sm ${totalPnLPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {formatPercent(totalPnLPercent)}
+                </p>
+              </div>
+              <div className={`p-3 rounded-xl ${totalPnL >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                {totalPnL >= 0 ? (
+                  <TrendingUp className={`h-6 w-6 ${totalPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
+                ) : (
+                  <TrendingDown className={`h-6 w-6 ${totalPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
                 )}
               </div>
-              <p className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatCurrency(totalPnL)}
-              </p>
-              <p className={`text-sm ${totalPnLPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {formatPercent(totalPnLPercent)}
-              </p>
             </div>
-            <div className={`p-3 rounded-lg ${totalPnL >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
-              {totalPnL >= 0 ? (
-                <TrendingUp className={`h-6 w-6 ${totalPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
-              ) : (
-                <TrendingDown className={`h-6 w-6 ${totalPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
-              )}
+          </div>
+
+          <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-lg border-2 border-brand-200 dark:border-brand-800 hover:shadow-xl transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">Active Positions</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{activePositions}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-300">{watchingStocks} watching</p>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl">
+                <Activity className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-lg border-2 border-brand-200 dark:border-brand-800 hover:shadow-xl transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">Triggered Actions</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{triggeredStocks}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-300">Recent triggers</p>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-xl">
+                <Target className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Active Positions</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{activePositions}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{watchingStocks} watching</p>
+        {/* Charts and Trading */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-lg border-2 border-brand-200 dark:border-brand-800">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="h-5 w-5 text-brand-700 dark:text-brand-300" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Portfolio Performance</h3>
             </div>
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <Activity className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            <PerformanceChart timeRange={timeRange} />
+          </div>
+
+          <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-lg border-2 border-brand-200 dark:border-brand-800">
+            <div className="flex items-center gap-2 mb-4">
+              <PieChart className="h-5 w-5 text-brand-700 dark:text-brand-300" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">P&L Distribution</h3>
             </div>
+            <ProfitLossChart positions={positions} />
+          </div>
+
+          <div data-trading-panel>
+            <TradingPanel 
+              onTradeComplete={() => {
+                loadData(true);
+                setQuickTradeSymbol(''); // Clear quick trade after completion
+              }}
+              quickTradeSymbol={quickTradeSymbol}
+              quickTradeType={quickTradeType}
+              onQuickTradeClear={() => {
+                setQuickTradeSymbol('');
+                setQuickTradeType('buy');
+              }}
+            />
           </div>
         </div>
 
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Triggered Actions</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{triggeredStocks}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Recent triggers</p>
-            </div>
-            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Target className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts and Trading */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Portfolio Performance</h3>
-          </div>
-          <PerformanceChart timeRange={timeRange} />
-        </div>
-
-        <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <PieChart className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">P&L Distribution</h3>
-          </div>
-          <ProfitLossChart positions={positions} />
-        </div>
-
-        <div data-trading-panel>
-          <TradingPanel 
-            onTradeComplete={() => {
-              loadData(true);
-              setQuickTradeSymbol(''); // Clear quick trade after completion
-            }}
-            quickTradeSymbol={quickTradeSymbol}
-            quickTradeType={quickTradeType}
-            onQuickTradeClear={() => {
-              setQuickTradeSymbol('');
-              setQuickTradeType('buy');
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Performance Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Top Performers */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-            Top Performers
-          </h3>
+        {/* Performance Tables */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Top Performers */}
+          <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-lg border-2 border-brand-200 dark:border-brand-800">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+              Top Performers
+            </h3>
           <div className="space-y-3">
             {topPerformers.length > 0 ? (
               topPerformers.map((position) => (
@@ -391,17 +392,17 @@ const Analytics: React.FC = () => {
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No active positions</p>
-            )}
+                <p className="text-gray-500 dark:text-gray-300 text-center py-4">No active positions</p>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Bottom Performers */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
-            Bottom Performers
-          </h3>
+          {/* Bottom Performers */}
+          <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-lg border-2 border-brand-200 dark:border-brand-800">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
+              Bottom Performers
+            </h3>
           <div className="space-y-3">
             {bottomPerformers.length > 0 ? (
               bottomPerformers.map((position) => (
@@ -422,16 +423,17 @@ const Analytics: React.FC = () => {
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No active positions</p>
-            )}
+                <p className="text-gray-500 dark:text-gray-300 text-center py-4">No active positions</p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Detailed Stock Performance */}
-      <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Stock Performance Details</h3>
-        <StockPerformanceTable positions={positions} onQuickTrade={handleQuickTrade} />
+        {/* Detailed Stock Performance */}
+        <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-lg border-2 border-brand-200 dark:border-brand-800">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Stock Performance Details</h3>
+          <StockPerformanceTable positions={positions} onQuickTrade={handleQuickTrade} />
+        </div>
       </div>
     </div>
   );

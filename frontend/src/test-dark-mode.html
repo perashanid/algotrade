@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Mode Color Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            lightest: '#EDF2FB',
+                            light: '#E2EAFC',
+                            medium: '#D7E3FC',
+                            DEFAULT: '#CCDBFD',
+                            dark: '#C1D3FE',
+                            darker: '#B6CCFE',
+                            darkest: '#ABC4FF',
+                            'dark-900': '#0f1729',
+                            'dark-800': '#1a2332',
+                            'dark-700': '#243447',
+                            'dark-600': '#2e445c',
+                            'dark-500': '#3d5a80',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-brand-dark-900 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold text-brand-light mb-8">Dark Mode Color Test</h1>
+        
+        <div class="space-y-4">
+            <!-- Background Colors -->
+            <div class="bg-brand-dark-900 p-4 rounded-lg border-2 border-brand-dark-600">
+                <p class="text-brand-light font-semibold">brand-dark-900 (#0f1729)</p>
+                <p class="text-gray-200">This is the darkest background color</p>
+            </div>
+            
+            <div class="bg-brand-dark-800 p-4 rounded-lg border-2 border-brand-dark-600">
+                <p class="text-brand-light font-semibold">brand-dark-800 (#1a2332)</p>
+                <p class="text-gray-200">This is used for sidebar and cards</p>
+            </div>
+            
+            <div class="bg-brand-dark-700 p-4 rounded-lg border-2 border-brand-dark-600">
+                <p class="text-brand-light font-semibold">brand-dark-700 (#243447)</p>
+                <p class="text-gray-200">This is used for hover states</p>
+            </div>
+            
+            <div class="bg-brand-dark-600 p-4 rounded-lg border-2 border-brand-dark-600">
+                <p class="text-brand-light font-semibold">brand-dark-600 (#2e445c)</p>
+                <p class="text-gray-200">This is used for borders</p>
+            </div>
+            
+            <!-- Sidebar Simulation -->
+            <div class="mt-8">
+                <h2 class="text-2xl font-bold text-brand-light mb-4">Sidebar Simulation</h2>
+                <div class="bg-brand-dark-800 p-6 rounded-lg border-2 border-brand-dark-600">
+                    <div class="space-y-2">
+                        <div class="flex items-center px-3 py-2 text-gray-200 hover:bg-brand-dark-700 rounded-lg cursor-pointer">
+                            <span>Dashboard</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 text-gray-200 hover:bg-brand-dark-700 rounded-lg cursor-pointer">
+                            <span>Constraints</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 bg-gradient-to-r from-brand-dark-700 to-brand-dark-600 text-brand-lightest rounded-lg">
+                            <span>Analytics (Active)</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 text-gray-200 hover:bg-brand-dark-700 rounded-lg cursor-pointer">
+                            <span>Trade History</span>
+                        </div>
+                        <div class="flex items-center px-3 py-2 text-gray-200 hover:bg-brand-dark-700 rounded-lg cursor-pointer">
+                            <span>Backtest</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Text Colors -->
+            <div class="mt-8">
+                <h2 class="text-2xl font-bold text-brand-light mb-4">Text Colors</h2>
+                <div class="bg-brand-dark-800 p-6 rounded-lg border-2 border-brand-dark-600 space-y-2">
+                    <p class="text-brand-lightest">brand-lightest (#EDF2FB) - Brightest text</p>
+                    <p class="text-brand-light">brand-light (#E2EAFC) - Light text</p>
+                    <p class="text-gray-200">gray-200 (#e5e7eb) - Body text</p>
+                    <p class="text-gray-300">gray-300 (#d1d5db) - Secondary text</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 p-4 bg-green-900/30 border-2 border-green-600 rounded-lg">
+            <p class="text-green-400 font-semibold">✅ If you can see all these colors clearly, dark mode is working!</p>
+            <p class="text-gray-200 mt-2">The sidebar should look like the "Sidebar Simulation" above.</p>
+        </div>
+    </div>
+</body>
+</html>

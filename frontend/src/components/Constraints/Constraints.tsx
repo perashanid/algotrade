@@ -88,11 +88,12 @@ const Constraints: React.FC = () => {
   }
 
   return (
-    <div className="p-8">
-        <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-brand-lightest via-brand-light to-brand-medium dark:from-brand-950 dark:via-brand-900 dark:to-brand-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Trading Constraints</h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-1">Manage your automated trading rules and triggers</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Trading Constraints</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2 text-lg">Manage your automated trading rules and triggers</p>
           </div>
           <div className="flex items-center gap-3">
             <ViewModeToggle viewMode={viewMode} setViewMode={setViewMode} />
@@ -105,12 +106,12 @@ const Constraints: React.FC = () => {
         </div>
 
         {viewMode === 'groups' && constraintGroups.length === 0 && constraints.length === 0 ? (
-          <div className="card text-center py-12">
-            <div className="mx-auto w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-              <Users className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+          <div className="bg-white dark:bg-brand-900 rounded-2xl p-12 shadow-lg border-2 border-brand-200 dark:border-brand-800 text-center">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-brand-light to-brand-medium dark:from-brand-800 dark:to-brand-700 rounded-full flex items-center justify-center mb-6">
+              <Users className="h-8 w-8 text-brand-700 dark:text-brand-300" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No constraint groups yet</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">No constraint groups yet</h3>
+            <p className="text-gray-600 dark:text-gray-100 mb-6 max-w-md mx-auto">
               Create your first constraint group to apply trading rules to multiple stocks at once. Use the "New Constraint Group" button above to get started.
             </p>
           </div>
@@ -160,6 +161,7 @@ const Constraints: React.FC = () => {
           onSubmit={handleCreateStockGroup}
         />
       </div>
+    </div>
   );
 };
 

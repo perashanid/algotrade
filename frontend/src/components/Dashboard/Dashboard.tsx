@@ -32,7 +32,7 @@ const Dashboard: React.FC = () => {
   if (portfolioLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 dark:border-blue-400"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-darkest dark:border-brand-light"></div>
       </div>
     );
   }
@@ -47,7 +47,7 @@ const Dashboard: React.FC = () => {
           </p>
           <button
             onClick={() => refetchPortfolio()}
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
+            className="px-4 py-2 bg-gradient-to-r from-brand-700 to-brand-600 text-white rounded-lg hover:from-brand-darker hover:to-brand-dark shadow-lg hover:shadow-xl transition-all"
           >
             Try Again
           </button>
@@ -57,42 +57,44 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-1">
-            Monitor your algorithmic trading performance
-          </p>
-        </div>
-        <button
-          onClick={handleRefresh}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </button>
-      </div>
-
-      {/* Portfolio Summary */}
-      {portfolio && portfolio.positions && portfolio.positions.length > 0 && (
-        <div className="mb-8">
-          <PortfolioSummary portfolio={portfolio} />
-        </div>
-      )}
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-8">
-          <BookedPnL />
-          <ConstraintPositionList />
+    <div className="min-h-screen bg-gradient-to-br from-brand-lightest via-brand-light to-brand-medium dark:from-brand-950 dark:via-brand-900 dark:to-brand-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2 text-lg">
+              Monitor your algorithmic trading performance
+            </p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-700 to-brand-600 text-white rounded-xl hover:from-brand-darker hover:to-brand-dark shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+          >
+            <RefreshCw className="h-5 w-5" />
+            Refresh
+          </button>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <ConstraintsSummary />
+        {/* Portfolio Summary */}
+        {portfolio && portfolio.positions && portfolio.positions.length > 0 && (
+          <div className="mb-8">
+            <PortfolioSummary portfolio={portfolio} />
+          </div>
+        )}
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            <BookedPnL />
+            <ConstraintPositionList />
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <ConstraintsSummary />
+          </div>
         </div>
       </div>
     </div>

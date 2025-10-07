@@ -58,12 +58,21 @@ api.interceptors.response.use(
       message: error.message
     });
     
-    if (error.response?.status === 401) {
-      // Token expired or invalid
+    // Don't redirect on login/register failures
+    const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
+    
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      // Token expired or invalid (but not a login failure)
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    
+    // Enhance error with backend message if available
+    if (error.response?.data?.error?.message) {
+      error.message = error.response.data.error.message;
+    }
+    
     return Promise.reject(error);
   }
 );

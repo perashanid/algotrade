@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../services/auth';
+import { useAuth } from '../../contexts/AuthContext';
 import { TrendingUp, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -18,10 +20,15 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await authService.login(formData);
+      console.log('🔐 Attempting login with:', { email: formData.email });
+      const result = await authService.login(formData);
+      console.log('✅ Login successful, result:', result);
+      login(result.token, result.user);
       toast.success('Login successful!');
-      navigate('/dashboard');
+      console.log('🚀 Navigating to /app/dashboard');
+      navigate('/app/dashboard');
     } catch (error) {
+      console.error('❌ Login failed:', error);
       toast.error(error instanceof Error ? error.message : 'Login failed');
     } finally {
       setIsLoading(false);
@@ -43,12 +50,12 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-lightest via-brand-light to-brand-medium dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center">
-            <TrendingUp className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+            <TrendingUp className="h-12 w-12 text-brand-700 dark:text-brand-300" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
             Sign in to AlgoTrader
@@ -57,7 +64,7 @@ const Login: React.FC = () => {
             Or{' '}
             <Link
               to="/register"
-              className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
+              className="font-medium text-brand-700 dark:text-brand-300 hover:text-brand-darker dark:hover:text-brand-lightest"
             >
               create a new account
             </Link>
@@ -66,7 +73,7 @@ const Login: React.FC = () => {
             <button
               type="button"
               onClick={fillDemoCredentials}
-              className="text-sm font-medium text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300 underline"
+              className="text-sm font-medium text-brand-700 dark:text-brand-300 hover:text-brand-darker dark:hover:text-brand-lightest underline"
             >
               Try Demo Account
             </button>
@@ -89,7 +96,7 @@ const Login: React.FC = () => {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                className="w-full px-3 py-2 border border-brand-medium dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-darkest dark:focus:ring-brand-light focus:border-transparent"
                 placeholder="Enter your email"
               />
             </div>
@@ -108,7 +115,7 @@ const Login: React.FC = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                  className="w-full px-3 py-2 pr-10 border border-brand-medium dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-darkest dark:focus:ring-brand-light focus:border-transparent"
                   placeholder="Enter your password"
                 />
                 <button
@@ -150,7 +157,7 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full px-4 py-2 bg-gradient-to-r from-brand-700 to-brand-600 text-white rounded-lg font-medium hover:from-brand-darker hover:to-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-darkest dark:focus:ring-brand-light disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>

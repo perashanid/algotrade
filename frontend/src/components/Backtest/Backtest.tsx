@@ -88,84 +88,85 @@ const Backtest: React.FC = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Backtest</h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">Test your trading strategies against historical data</p>
+    <div className="min-h-screen bg-gradient-to-br from-brand-lightest via-brand-light to-brand-medium dark:from-brand-950 dark:via-brand-900 dark:to-brand-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Backtest</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2 text-lg">Test your trading strategies against historical data</p>
+          </div>
         </div>
-      </div>
 
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200 dark:border-gray-700 mb-8">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab('new')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'new'
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              New Backtest
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('results')}
-            disabled={!currentResults}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'results' && currentResults
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 disabled:text-gray-300 dark:disabled:text-gray-600'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Results
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'history'
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              History
-            </div>
-          </button>
-        </nav>
-      </div>
+        {/* Tab Navigation */}
+        <div className="border-b-2 border-brand-medium dark:border-gray-700 mb-8">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('new')}
+              className={`py-3 px-2 border-b-2 font-medium text-sm transition-all ${
+                activeTab === 'new'
+                  ? 'border-brand-darkest text-brand-700 dark:text-brand-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-darker dark:hover:text-brand-lightest hover:border-brand-light dark:hover:border-gray-600'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Play className="h-5 w-5" />
+                New Backtest
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('results')}
+              disabled={!currentResults}
+              className={`py-3 px-2 border-b-2 font-medium text-sm transition-all ${
+                activeTab === 'results' && currentResults
+                  ? 'border-brand-darkest text-brand-700 dark:text-brand-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-darker dark:hover:text-brand-lightest hover:border-brand-light dark:hover:border-gray-600 disabled:text-gray-300 dark:disabled:text-gray-600'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Results
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`py-3 px-2 border-b-2 font-medium text-sm transition-all ${
+                activeTab === 'history'
+                  ? 'border-brand-darkest text-brand-700 dark:text-brand-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-brand-darker dark:hover:text-brand-lightest hover:border-brand-light dark:hover:border-gray-600'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                History
+              </div>
+            </button>
+          </nav>
+        </div>
 
-      {/* Content */}
-      {activeTab === 'new' && (
-        <div>
-          {/* Info Banner */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-8">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">About Backtesting</h3>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  Backtesting simulates how your trading constraints would have performed using historical market data. 
-                  This helps you evaluate strategy effectiveness before risking real capital.
-                </p>
+        {/* Content */}
+        {activeTab === 'new' && (
+          <div>
+            {/* Info Banner */}
+            <div className="bg-gradient-to-r from-brand-lightest to-brand-light dark:from-brand-900 dark:to-brand-850 border-2 border-brand-300 dark:border-brand-800 rounded-2xl p-6 mb-8 shadow-md">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-6 w-6 text-brand-700 dark:text-brand-300 mt-0.5" />
+                <div>
+                  <h3 className="text-base font-semibold text-brand-700 dark:text-brand-300est">About Backtesting</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                    Backtesting simulates how your trading constraints would have performed using historical market data. 
+                    This helps you evaluate strategy effectiveness before risking real capital.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <BacktestForm
-            constraintGroups={constraintGroups}
-            onRunBacktest={handleRunBacktest}
-            isRunning={backtesting}
-          />
-        </div>
-      )}
+            <BacktestForm
+              constraintGroups={constraintGroups}
+              onRunBacktest={handleRunBacktest}
+              isRunning={backtesting}
+            />
+          </div>
+        )}
 
       {activeTab === 'results' && currentResults && (
         <BacktestResults results={currentResults} constraintGroups={constraintGroups} />
@@ -175,20 +176,21 @@ const Backtest: React.FC = () => {
         <BacktestHistory />
       )}
 
-      {/* Running Backtest Overlay */}
-      {backtesting && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Running Backtest</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Analyzing historical data and simulating trades. This may take a few moments...
-              </p>
+        {/* Running Backtest Overlay */}
+        {backtesting && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-brand-900 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border-2 border-brand-200 dark:border-brand-800">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-darkest dark:border-brand-light mx-auto mb-4"></div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Running Backtest</h3>
+                <p className="text-gray-600 dark:text-gray-100">
+                  Analyzing historical data and simulating trades. This may take a few moments...
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
