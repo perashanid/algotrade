@@ -102,37 +102,42 @@ export class ConstraintEvaluatorService {
       });
     }
 
-    // Check for sell trigger (price rise)
-    if (priceChangePercent >= constraint.sellTriggerPercent) {
-      triggers.push({
-        constraintId: constraint.id,
-        stockSymbol: constraint.stockSymbol,
-        triggerType: 'SELL',
-        currentPrice,
-        triggerPrice: previousPrice * (1 + constraint.sellTriggerPercent / 100),
-        amount: constraint.sellAmount,
-        timestamp: new Date()
-      });
-    }
-
-    // Check for profit trigger (if set and user has position)
-    if (constraint.profitTriggerPercent) {
-      const position = await PortfolioService.getPositionBySymbol(constraint.userId, constraint.stockSymbol);
+    // Get user's position to check profit for sell triggers
+    const position = await PortfolioService.getPositionBySymbol(constraint.userId, constraint.stockSymbol);
+    
+    // Only check sell triggers if user has a position
+    if (position && position.quantity > 0) {
+      // Calculate actual profit from buying position
+      const profitPercent = ((currentPrice - position.averageCost) / position.averageCost) * 100;
       
-      if (position && position.quantity > 0) {
-        const profitPercent = ((currentPrice - position.averageCost) / position.averageCost) * 100;
-        
-        if (profitPercent >= constraint.profitTriggerPercent) {
-          triggers.push({
-            constraintId: constraint.id,
-            stockSymbol: constraint.stockSymbol,
-            triggerType: 'PROFIT',
-            currentPrice,
-            triggerPrice: position.averageCost * (1 + constraint.profitTriggerPercent / 100),
-            amount: constraint.sellAmount,
-            timestamp: new Date()
-          });
-        }
+      // Check for sell trigger (price rise) - BUT ONLY IF PROFITABLE
+      // This ensures you only sell when BOTH conditions are met:
+      // 1. Price rose by sellTriggerPercent from your buy price
+      // 2. You're actually at a profit
+      if (profitPercent >= constraint.sellTriggerPercent && profitPercent > 0) {
+        triggers.push({
+          constraintId: constraint.id,
+          stockSymbol: constraint.stockSymbol,
+          triggerType: 'SELL',
+          currentPrice,
+          triggerPrice: position.averageCost * (1 + constraint.sellTriggerPercent / 100),
+          amount: constraint.sellAmount,
+          timestamp: new Date()
+        });
+      }
+
+      // Check for profit trigger (if set)
+      // This is a separate condition for taking profit at a specific target
+      if (constraint.profitTriggerPercent && profitPercent >= constraint.profitTriggerPercent) {
+        triggers.push({
+          constraintId: constraint.id,
+          stockSymbol: constraint.stockSymbol,
+          triggerType: 'PROFIT',
+          currentPrice,
+          triggerPrice: position.averageCost * (1 + constraint.profitTriggerPercent / 100),
+          amount: constraint.sellAmount,
+          timestamp: new Date()
+        });
       }
     }
 

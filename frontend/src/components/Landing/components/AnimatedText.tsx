@@ -26,7 +26,7 @@ const AnimatedText: React.FC<AnimatedTextProps> = ({ text, className = '', delay
       opacity: 1,
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         damping: 12,
         stiffness: 100,
       },
